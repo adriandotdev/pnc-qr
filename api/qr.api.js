@@ -1,4 +1,4 @@
-const { AccessTokenVerifier } = require("../middlewares/TokenMiddleware"); // Remove this if unused
+const TokenMiddleware = require("../middlewares/TokenMiddleware");
 const { validationResult, body } = require("express-validator");
 
 const logger = require("../config/winston");
@@ -28,8 +28,8 @@ module.exports = (app) => {
 	}
 
 	app.get(
-		"your_path",
-		[AccessTokenVerifier],
+		"qr/api/v1/qr/rates/:cpo_owner_id",
+		[],
 
 		/**
 		 * @param {import('express').Request} req
@@ -38,15 +38,16 @@ module.exports = (app) => {
 		async (req, res) => {
 			try {
 				logger.info({
-					NAME_THIS_LOG_REQUEST: {
-						// your call what data you need to log
+					QR_RATES_LIST_REQUEST: {
+						message: "SUCCESS",
 					},
 				});
 
 				/** Your logic here */
+
 				logger.info({
-					NAME_THIS_LOG_RESPONSE: {
-						// your call what data you need to log
+					QR_RATES_LIST_RESPONSE: {
+						message: "SUCCESS",
 					},
 				});
 				return res
@@ -54,7 +55,7 @@ module.exports = (app) => {
 					.json({ status: 200, data: [], message: "Success" });
 			} catch (err) {
 				logger.error({
-					GET_CPOS_ERROR: {
+					QR_RATES_LIST_ERROR: {
 						err,
 						message: err.message,
 					},
