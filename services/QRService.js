@@ -8,6 +8,7 @@ const {
 
 const otpGenerator = require("otp-generator");
 const { v4: uuidv4 } = require("uuid");
+const SMS = require("../utils/SMS");
 
 module.exports = class QRService {
 	#repository;
@@ -104,6 +105,15 @@ module.exports = class QRService {
 				conn.rollback();
 				throw new HttpBadRequest(reserveStatus, []);
 			}
+
+			const message = `Hello, Guest User\n\nYour OTP for ParkNcharge free charging is ${otp}.\n\nUse it to authenticate. If you didn't request this, ignore it.\n\nThanks,\nParkNcharge`;
+
+			let sms = new SMS({
+				contact_number: mobile_number,
+				message,
+			});
+
+			await sms.SendOTP();
 
 			conn.commit();
 
