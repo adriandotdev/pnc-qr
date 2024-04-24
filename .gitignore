@@ -2,3 +2,4 @@
 /logs/nspocpi
 /package-lock.json
 .env
+.VSCodeCounter
