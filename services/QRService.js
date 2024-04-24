@@ -131,6 +131,26 @@ module.exports = class QRService {
 		}
 	}
 
+	async VerifyOTP(data) {
+		const result = await this.#repository.VerifyOTP(data);
+
+		const status = result[0][0].STATUS;
+
+		if (status !== "SUCCESS") throw new HttpBadRequest(status, []);
+
+		return status;
+	}
+
+	async ResendOTP(data) {
+		const result = await this.#repository.ResendOTP(data);
+
+		const status = result[0][0].STATUS;
+
+		if (status !== "SUCCESS") throw new HttpBadRequest(status, []);
+
+		return status;
+	}
+
 	async #GetTimeslots(locationID, evseUID, connectorID, currentHour) {
 		let timeslots = null;
 

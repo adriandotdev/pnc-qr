@@ -43,6 +43,9 @@ module.exports = (app) => {
 
 				logger.info({
 					QR_RATES_LIST_REQUEST: {
+						data: {
+							evse_uid,
+						},
 						message: "SUCCESS",
 					},
 				});
@@ -97,6 +100,9 @@ module.exports = (app) => {
 
 				logger.info({
 					QR_RESERVE_API_REQUEST: {
+						data: {
+							...req.body,
+						},
 						message: "SUCCESS",
 					},
 				});
@@ -118,6 +124,116 @@ module.exports = (app) => {
 			} catch (err) {
 				logger.error({
 					QR_RESERVE_API_ERROR: {
+						err,
+						message: err.message,
+					},
+				});
+				return res.status(err.status || 500).json({
+					status: err.status || 500,
+					data: err.data || [],
+					message: err.message || "Internal Server Error",
+				});
+			}
+		}
+	);
+
+	app.post(
+		"/qr/api/v1/qr/otp/verify/:guest_id",
+		[],
+
+		/**
+		 * @param {import('express').Request} req
+		 * @param {import('express').Response} res
+		 */
+		async (req, res) => {
+			try {
+				const { guest_id } = req.params;
+
+				const { otp, timeslot_id, next_timeslot_id } = req.body;
+
+				logger.info({
+					QR_VERIFY_REQUEST: {
+						data: {
+							...req.body,
+						},
+						message: "SUCCESS",
+					},
+				});
+
+				const result = await service.VerifyOTP({
+					user_driver_guest_id: guest_id,
+					otp,
+					timeslot_id,
+					next_timeslot_id: next_timeslot_id || 0,
+				});
+
+				logger.info({
+					QR_VERIFY_RESPONSE: {
+						message: "SUCCESS",
+					},
+				});
+
+				return res
+					.status(200)
+					.json({ status: 200, data: result, message: "Success" });
+			} catch (err) {
+				logger.error({
+					QR_VERIFY_OTP: {
+						err,
+						message: err.message,
+					},
+				});
+				return res.status(err.status || 500).json({
+					status: err.status || 500,
+					data: err.data || [],
+					message: err.message || "Internal Server Error",
+				});
+			}
+		}
+	);
+
+	app.post(
+		"/qr/api/v1/qr/otp/resend/:guest_id",
+		[],
+
+		/**
+		 * @param {import('express').Request} req
+		 * @param {import('express').Response} res
+		 */
+		async (req, res) => {
+			try {
+				const { guest_id } = req.params;
+
+				const { timeslot_id, next_timeslot_id } = req.body;
+
+				logger.info({
+					QR_RESEND_OTP_REQUEST: {
+						data: {
+							guest_id,
+							timeslot_id,
+							next_timeslot_id,
+						},
+						message: "SUCCESS",
+					},
+				});
+
+				const result = await service.ResendOTP({
+					user_driver_guest_id: guest_id,
+					timeslot_id,
+					next_timeslot_id: next_timeslot_id || 0,
+				});
+
+				logger.info({
+					QR_RESEND_OTP_RESPONSE: {
+						message: "SUCCESS",
+					},
+				});
+				return res
+					.status(200)
+					.json({ status: 200, data: result, message: "Success" });
+			} catch (err) {
+				logger.error({
+					QR_RESEND_OTP: {
 						err,
 						message: err.message,
 					},
