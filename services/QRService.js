@@ -33,9 +33,11 @@ module.exports = class QRService {
 		paid_hour,
 		qr_payment,
 	}) {
-		const conn = null;
+		let conn = null;
 
 		try {
+			conn = await this.#repository.GetConnection();
+
 			const otp = otpGenerator.generate(4, {
 				upperCaseAlphabets: false,
 				specialChars: false,
@@ -61,36 +63,38 @@ module.exports = class QRService {
 			const timeslot = result.data.data[0];
 			const nextTimeslot = result.data.data[1];
 
-			const addGuestResponse = await this.#repository.AddGuest({
-				is_free,
-				mobile_number,
-				timeslot_id: timeslot.timeslot_id,
-				paid_hour,
-				qr_payment,
-				rfid,
-				otp,
-			});
+			const addGuestResponse = await this.#repository.AddGuest(
+				{
+					is_free,
+					mobile_number,
+					timeslot_id: timeslot.timeslot_id,
+					paid_hour,
+					qr_payment,
+					rfid,
+					otp,
+				},
+				conn
+			);
 
-			const addGuestStatus = addGuestResponse.result[0][0].STATUS;
-			const user_driver_guest_id =
-				addGuestResponse.result[0][0].user_driver_guest_id;
-			const conn = addGuestResponse.connection;
+			const addGuestStatus = addGuestResponse[0][0].STATUS;
+			const user_driver_guest_id = addGuestResponse[0][0].user_driver_guest_id;
 
 			if (addGuestStatus !== "SUCCESS") {
 				conn.rollback();
-				conn.release();
 				throw new HttpBadRequest(addGuestStatus, []);
 			}
 
-			const reserveResponse = await this.#repository.Reserve({
-				user_guest_id: user_driver_guest_id,
-				timeslot_id: timeslot.timeslot_id,
-				next_timeslot_id: nextTimeslot.timeslot_id,
-				current_time,
-				current_date,
-				timeslot_time: timeslot.end,
-				connection: conn,
-			});
+			const reserveResponse = await this.#repository.Reserve(
+				{
+					user_guest_id: user_driver_guest_id,
+					timeslot_id: timeslot.timeslot_id,
+					next_timeslot_id: nextTimeslot.timeslot_id,
+					current_time,
+					current_date,
+					timeslot_time: timeslot.end,
+				},
+				conn
+			);
 
 			const reserveStatus = reserveResponse[0][0].STATUS;
 			const timeslot_id = reserveResponse[0][0].timeslot_id;
@@ -98,9 +102,10 @@ module.exports = class QRService {
 
 			if (reserveStatus !== "SUCCESS") {
 				conn.rollback();
-				conn.release();
 				throw new HttpBadRequest(reserveStatus, []);
 			}
+
+			conn.commit();
 
 			return {
 				user_driver_guest_id,
