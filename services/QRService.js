@@ -93,6 +93,7 @@ module.exports = class QRService {
 					current_time,
 					current_date,
 					timeslot_time: timeslot.end,
+					next_timeslot_date: nextTimeslot.date,
 				},
 				conn
 			);

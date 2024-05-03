@@ -128,6 +128,8 @@ module.exports = (app) => {
 						message: err.message,
 					},
 				});
+
+				console.log(err);
 				return res.status(err.status || 500).json({
 					status: err.status || 500,
 					data: err.data || [],

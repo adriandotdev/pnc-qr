@@ -68,10 +68,11 @@ module.exports = class QRRepository {
 			current_time,
 			current_date,
 			timeslot_time,
+			next_timeslot_date,
 		},
 		connection
 	) {
-		const QUERY = `CALL WEB_QR_RESERVE(?,?,?,?,?,?)`;
+		const QUERY = `CALL WEB_QR_RESERVE(?,?,?,?,?,?,?)`;
 
 		return new Promise((resolve, reject) => {
 			connection.query(
@@ -83,6 +84,7 @@ module.exports = class QRRepository {
 					current_time,
 					current_date,
 					timeslot_time,
+					next_timeslot_date,
 				],
 				(err, result) => {
 					if (err) {
