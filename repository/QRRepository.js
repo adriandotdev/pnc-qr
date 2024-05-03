@@ -97,6 +97,42 @@ module.exports = class QRRepository {
 		});
 	}
 
+	ReserveWithPayment({
+		mobile_number,
+		paid_hour,
+		timeslot_id,
+		next_timeslot_id,
+		current_time,
+		current_date,
+		timeslot_time,
+		next_timeslot_date,
+	}) {
+		const QUERY = `CALL WEB_QR_RESERVE_WITH_PAYMENT(?,?,?,?,?,?,?,?)`;
+
+		return new Promise((resolve, reject) => {
+			mysql.query(
+				QUERY,
+				[
+					mobile_number,
+					timeslot_id,
+					next_timeslot_id,
+					paid_hour,
+					current_time,
+					current_date,
+					timeslot_time,
+					next_timeslot_date,
+				],
+				(err, result) => {
+					if (err) {
+						reject(err);
+					}
+
+					resolve(result);
+				}
+			);
+		});
+	}
+
 	VerifyOTP(data) {
 		const QUERY = `CALL WEB_QR_VERIFY_OTP(?,?,?,?)`;
 
@@ -135,6 +171,20 @@ module.exports = class QRRepository {
 					resolve(result);
 				}
 			);
+		});
+	}
+
+	CheckEVSE(qrCode, evseUID) {
+		const QUERY = `CALL WEB_QR_CHECK_EVSE(?,?)`;
+
+		return new Promise((resolve, reject) => {
+			mysql.query(QUERY, [qrCode, evseUID], (err, result) => {
+				if (err) {
+					reject(err);
+				}
+
+				resolve(result);
+			});
 		});
 	}
 };

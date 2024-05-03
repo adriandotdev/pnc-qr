@@ -132,6 +132,50 @@ module.exports = class QRService {
 		}
 	}
 
+	async ReserveWithPayment({
+		mobile_number,
+		location_id,
+		evse_uid,
+		connector_id,
+		current_time,
+		current_date,
+		paid_hour,
+		payment_type,
+	}) {
+		try {
+			const timeArray = current_time.split(":");
+
+			const currentHour = parseInt(timeArray[0], 10);
+			const currentMinute = parseInt(timeArray[1], 10);
+			const currentSecond = parseInt(timeArray[2], 10);
+
+			const result = await this.#GetTimeslots(
+				location_id,
+				evse_uid,
+				connector_id,
+				currentHour
+			);
+
+			const timeslot = result.data.data[0];
+			const nextTimeslot = result.data.data[1];
+
+			const reserveResponse = await this.#repository.ReserveWithPayment({
+				mobile_number,
+				paid_hour,
+				timeslot_id: timeslot.timeslot_id,
+				next_timeslot_id: nextTimeslot.timeslot_id,
+				current_time,
+				current_date,
+				timeslot_time: timeslot.start,
+				next_timeslot_date: nextTimeslot.data,
+			});
+
+			return reserveResponse;
+		} catch (err) {
+			console.log(err);
+		}
+	}
+
 	async VerifyOTP(data) {
 		const result = await this.#repository.VerifyOTP(data);
 
@@ -176,5 +220,18 @@ module.exports = class QRService {
 		}
 
 		return timeslots;
+	}
+
+	async CheckEVSE(qrCode, evseUID) {
+		const result = await this.#repository.CheckEVSE(qrCode, evseUID);
+
+		const evseDetails = result[0][0];
+		const status = result[0][0].STATUS;
+
+		if (status !== "SUCCESS") throw new HttpBadRequest(status, []);
+
+		const rates = await this.#repository.GetQRRates(evseUID);
+
+		return { ...evseDetails, rates };
 	}
 };

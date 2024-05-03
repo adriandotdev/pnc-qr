@@ -77,6 +77,86 @@ module.exports = (app) => {
 		}
 	);
 
+	app.get(
+		"/qr/api/v1/qr/:code/:evse_uid",
+		[],
+		/**
+		 * @param {import('express').Request} req
+		 * @param {import('express').Response} res
+		 */
+		async (req, res) => {
+			try {
+				const { code, evse_uid } = req.params;
+
+				logger.info({
+					GET_EVSE_DETAILS_REQUEST: {
+						data: {
+							code,
+							evse_uid,
+						},
+
+						message: "SUCCESS",
+					},
+				});
+
+				const result = await service.CheckEVSE(code, evse_uid);
+
+				logger.info({
+					GET_EVSE_DETAILS_RESPONSE: {
+						message: "SUCCESS",
+					},
+				});
+
+				return res
+					.status(200)
+					.json({ status: 200, data: result, message: "Success" });
+			} catch (err) {
+				logger.error({
+					GET_EVSE_DETAILS: {
+						err,
+						message: err.message,
+					},
+				});
+
+				console.log(err);
+
+				return res.status(err.status || 500).json({
+					status: err.status || 500,
+					data: err.data || [],
+					message: err.message || "Internal Server Error",
+				});
+			}
+		}
+	);
+
+	app.post(
+		"/qr/api/v1/qr/payments/:user_type/:payment_type",
+		[],
+		/**
+		 * @param {import('express').Request} req
+		 * @param {import('express').Response} res
+		 */
+		async (req, res) => {
+			try {
+				const {} = req.body;
+			} catch (err) {
+				logger.error({
+					QR_PAYMENT_API: {
+						err,
+						message: err.message,
+					},
+				});
+
+				console.log(err);
+				return res.status(err.status || 500).json({
+					status: err.status || 500,
+					data: err.data || [],
+					message: err.message || "Internal Server Error",
+				});
+			}
+		}
+	);
+
 	app.post(
 		"/qr/api/v1/qr/reserve",
 		[],
@@ -94,8 +174,9 @@ module.exports = (app) => {
 					evse_uid,
 					connector_id,
 					current_time,
+					current_date,
 					paid_hour,
-					qr_payment,
+					payment_type,
 				} = req.body;
 
 				logger.info({
@@ -108,9 +189,26 @@ module.exports = (app) => {
 				});
 
 				// logic here
-				const result = await service.Reserve({
-					...req.body,
-				});
+				let result = null;
+
+				if (is_free === 1) {
+					logger.info({ FREE_CHARGING: true });
+					result = await service.Reserve({
+						...req.body,
+					});
+				} else {
+					logger.info({ FREE_CHARGING: false });
+					result = await service.ReserveWithPayment({
+						mobile_number,
+						location_id,
+						evse_uid,
+						connector_id,
+						current_time,
+						current_date,
+						paid_hour,
+						payment_type,
+					});
+				}
 
 				logger.info({
 					QR_RESERVE_API_RESPONSE: {
