@@ -1,5 +1,7 @@
 const mysql = require("../database/mysql");
 
+const logger = require("../config/winston");
+
 module.exports = class QRRepository {
 	GetConnection() {
 		return new Promise((resolve, reject) => {
@@ -106,8 +108,9 @@ module.exports = class QRRepository {
 		current_date,
 		timeslot_time,
 		next_timeslot_date,
+		rfid,
 	}) {
-		const QUERY = `CALL WEB_QR_RESERVE_WITH_PAYMENT(?,?,?,?,?,?,?,?)`;
+		const QUERY = `CALL WEB_QR_RESERVE_WITH_PAYMENT(?,?,?,?,?,?,?,?,?)`;
 
 		return new Promise((resolve, reject) => {
 			mysql.query(
@@ -121,6 +124,7 @@ module.exports = class QRRepository {
 					current_date,
 					timeslot_time,
 					next_timeslot_date,
+					rfid,
 				],
 				(err, result) => {
 					if (err) {
@@ -162,7 +166,11 @@ module.exports = class QRRepository {
 		return new Promise((resolve, reject) => {
 			mysql.query(
 				QUERY,
-				[data.user_driver_guest_id, data.timeslot_id, data.next_timeslot_id],
+				[
+					data.user_driver_guest_id,
+					data.timeslot_id,
+					data.next_timeslot_id,
+				],
 				(err, result) => {
 					if (err) {
 						reject(err);

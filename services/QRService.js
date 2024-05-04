@@ -46,7 +46,10 @@ module.exports = class QRService {
 				digits: true,
 			});
 
-			const rfid = uuidv4().replace(/-/g, "").substring(0, 12).toUpperCase();
+			const rfid = uuidv4()
+				.replace(/-/g, "")
+				.substring(0, 12)
+				.toUpperCase();
 
 			const timeArray = current_time.split(":");
 
@@ -78,7 +81,8 @@ module.exports = class QRService {
 			);
 
 			const addGuestStatus = addGuestResponse[0][0].STATUS;
-			const user_driver_guest_id = addGuestResponse[0][0].user_driver_guest_id;
+			const user_driver_guest_id =
+				addGuestResponse[0][0].user_driver_guest_id;
 
 			if (addGuestStatus !== "SUCCESS") {
 				conn.rollback();
@@ -123,9 +127,11 @@ module.exports = class QRService {
 				timeslot_id,
 				next_timeslot_id,
 				status: addGuestStatus,
+				test: reserveResponse[0][0],
 			};
 		} catch (err) {
 			if (conn) conn.rollback();
+			console.log(err);
 			throw new HttpInternalServerError(err, []);
 		} finally {
 			if (conn) conn.release();
@@ -143,6 +149,11 @@ module.exports = class QRService {
 		payment_type,
 	}) {
 		try {
+			const rfid = uuidv4()
+				.replace(/-/g, "")
+				.substring(0, 12)
+				.toUpperCase();
+
 			const timeArray = current_time.split(":");
 
 			const currentHour = parseInt(timeArray[0], 10);
@@ -166,8 +177,9 @@ module.exports = class QRService {
 				next_timeslot_id: nextTimeslot.timeslot_id,
 				current_time,
 				current_date,
-				timeslot_time: timeslot.start,
-				next_timeslot_date: nextTimeslot.data,
+				timeslot_time: timeslot.end,
+				next_timeslot_date: nextTimeslot.date,
+				rfid,
 			});
 
 			return reserveResponse;
