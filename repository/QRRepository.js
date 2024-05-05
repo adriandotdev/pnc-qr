@@ -99,21 +99,24 @@ module.exports = class QRRepository {
 		});
 	}
 
-	ReserveWithPayment({
-		mobile_number,
-		paid_hour,
-		timeslot_id,
-		next_timeslot_id,
-		current_time,
-		current_date,
-		timeslot_time,
-		next_timeslot_date,
-		rfid,
-	}) {
+	ReserveWithPayment(
+		{
+			mobile_number,
+			paid_hour,
+			timeslot_id,
+			next_timeslot_id,
+			current_time,
+			current_date,
+			timeslot_time,
+			next_timeslot_date,
+			rfid,
+		},
+		connection
+	) {
 		const QUERY = `CALL WEB_QR_RESERVE_WITH_PAYMENT(?,?,?,?,?,?,?,?,?)`;
 
 		return new Promise((resolve, reject) => {
-			mysql.query(
+			connection.query(
 				QUERY,
 				[
 					mobile_number,
@@ -193,6 +196,106 @@ module.exports = class QRRepository {
 
 				resolve(result);
 			});
+		});
+	}
+
+	AddGuestGCashPayment(
+		{ guest_id, evse_qr_rate_id, amount, payment_type, payment_status },
+		connection
+	) {
+		const QUERY = `
+		INSERT INTO 
+		user_driver_qr_payment_records
+		(user_driver_guest_id, evse_qr_rate_id, amount, payment_type, payment_status, date_created, date_modified)
+		VALUES (?,?,?,?,?, NOW(), NOW())`;
+
+		return new Promise((resolve, reject) => {
+			connection.query(
+				QUERY,
+				[
+					guest_id,
+					evse_qr_rate_id,
+					amount,
+					payment_type,
+					payment_status,
+				],
+				(err, result) => {
+					if (err) {
+						reject(err);
+					}
+
+					resolve(result);
+				}
+			);
+		});
+	}
+
+	UpdateGuestGCashPayment(
+		{ topup_id, payment_status, transaction_id },
+		connection
+	) {
+		const QUERY = `
+			UPDATE user_driver_qr_payment_records
+			SET payment_status = ?,
+			transaction_id = ?,
+			date_modified = NOW()
+			WHERE id = ?
+		`;
+
+		return new Promise((resolve, reject) => {
+			connection.query(
+				QUERY,
+				[payment_status, transaction_id, topup_id],
+				(err, result) => {
+					if (err) {
+						reject(err);
+					}
+
+					resolve(result);
+				}
+			);
+		});
+	}
+
+	AddGuestMayaPayment(
+		{
+			guest_id,
+			evse_qr_rate_id,
+			amount,
+			payment_type,
+			payment_status,
+			transaction_id,
+			client_key,
+		},
+		connection
+	) {
+		const QUERY = `
+			INSERT INTO 
+			user_driver_qr_payment_records
+			(user_driver_guest_id, evse_qr_rate_id, amount, payment_type, payment_status, transaction_id, maya_client_key, date_created, date_modified)
+			VALUES (?,?,?,?,?,?,?, NOW(), NOW())
+		`;
+
+		return new Promise((resolve, reject) => {
+			connection.query(
+				QUERY,
+				[
+					guest_id,
+					evse_qr_rate_id,
+					amount,
+					payment_type,
+					payment_status,
+					transaction_id,
+					client_key,
+				],
+				(err, result) => {
+					if (err) {
+						reject(err);
+					}
+
+					resolve(result);
+				}
+			);
 		});
 	}
 };
