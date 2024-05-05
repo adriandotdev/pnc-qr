@@ -36,7 +36,6 @@ module.exports = class QRService {
 		current_time,
 		current_date,
 		paid_hour,
-		qr_payment,
 	}) {
 		let conn = null;
 
@@ -77,7 +76,6 @@ module.exports = class QRService {
 					mobile_number,
 					timeslot_id: timeslot.timeslot_id,
 					paid_hour,
-					qr_payment,
 					rfid,
 					otp,
 				},

@@ -37,7 +37,7 @@ module.exports = class QRRepository {
 	}
 
 	AddGuest(data, connection) {
-		const QUERY = `CALL WEB_QR_ADD_GUEST(?,?,?,?,?,?,?)`;
+		const QUERY = `CALL WEB_QR_ADD_GUEST(?,?,?,?,?,?)`;
 
 		return new Promise((resolve, reject) => {
 			connection.query(
@@ -47,7 +47,6 @@ module.exports = class QRRepository {
 					data.mobile_number,
 					data.timeslot_id,
 					data.paid_hour,
-					data.qr_payment,
 					data.rfid,
 					data.otp,
 				],
