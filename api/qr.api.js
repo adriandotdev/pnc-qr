@@ -176,6 +176,7 @@ module.exports = (app) => {
 					current_time,
 					current_date,
 					paid_hour,
+					amount,
 					payment_type,
 				} = req.body;
 
@@ -206,6 +207,7 @@ module.exports = (app) => {
 						current_time,
 						current_date,
 						paid_hour,
+						amount,
 						payment_type,
 					});
 				}
@@ -227,7 +229,6 @@ module.exports = (app) => {
 					},
 				});
 
-				console.log(err);
 				return res.status(err.status || 500).json({
 					status: err.status || 500,
 					data: err.data || [],
