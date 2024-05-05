@@ -4,6 +4,7 @@ const HTTP_STATUS_CODE = {
 	FORBIDDEN: 403,
 	NOT_FOUND: 404,
 	UNPROCESSABLE_ENTITY: 422,
+	CONFLICT: 409,
 	INTERNAL_SERVER_ERROR: 500,
 };
 
@@ -72,6 +73,17 @@ class HttpUnauthorized extends HttpError {
 	}
 }
 
+class HttpConflict extends HttpError {
+	constructor(message, data) {
+		super({
+			name: "Conflict",
+			status: HTTP_STATUS_CODE.CONFLICT,
+			data,
+			message,
+		});
+	}
+}
+
 class HttpInternalServerError extends HttpError {
 	constructor(message, data) {
 		super({
@@ -90,5 +102,6 @@ module.exports = {
 	HttpNotFound,
 	HttpForbidden,
 	HttpUnprocessableEntity,
+	HttpConflict,
 	HttpInternalServerError,
 };
