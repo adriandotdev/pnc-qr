@@ -448,11 +448,11 @@ module.exports = class QRService {
 				return status === "paid"
 					? {
 							payment_status: "SUCCESS",
-							homelink: updateMayaPaymentResult[0][0].homelink,
+							home_link: updateMayaPaymentResult[0][0].home_link,
 					  }
 					: {
 							payment_status: "FAILED",
-							homelink: updateMayaPaymentResult[0][0].homelink,
+							home_link: updateMayaPaymentResult[0][0].home_link,
 					  };
 			}
 		}

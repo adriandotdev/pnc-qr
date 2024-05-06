@@ -333,7 +333,7 @@ module.exports = (app) => {
 
 				return res
 					.status(200)
-					.json({ status: 200, data: [], message: "Success" });
+					.json({ status: 200, data: result, message: "Success" });
 			} catch (err) {
 				logger.error({
 					QR_MAYA_PAYMENT_ERROR: {
