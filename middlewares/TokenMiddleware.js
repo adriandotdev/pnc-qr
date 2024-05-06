@@ -1,3 +1,4 @@
+const fs = require("fs");
 const jwt = require("jsonwebtoken");
 const JsonWebToken = require("../utils/JsonWebToken");
 const {
@@ -8,6 +9,7 @@ const {
 const logger = require("../config/winston");
 const Crypto = require("../utils/Crypto");
 const AccountRepository = require("../repository/AccountRepository");
+const path = require("path");
 
 module.exports = class TokenMiddleware {
 	#repository;
@@ -273,6 +275,63 @@ module.exports = class TokenMiddleware {
 				return res
 					.status(500)
 					.json({ status: 500, data: [], message: "Internal Server Error" });
+			}
+		};
+	}
+
+	AuthenticateGCashPaymentToken() {
+		/**
+		 * @param {import('express').Request} req
+		 * @param {import('express').Response} res
+		 * @param {import('express').NextFunction} next
+		 */
+		return async (req, res, next) => {
+			try {
+				let token = req.params.token;
+
+				if (token === null || token === undefined)
+					throw new HttpForbidden("INVALID_PAYMENT_TOKEN_1", []);
+
+				let filteredToken = token.substring(0, token.length - 2);
+
+				let privateKey = fs.readFileSync(
+					path.dirname(__dirname) +
+						path.sep +
+						"files" +
+						path.sep +
+						"public_key.pem"
+				);
+
+				jwt.verify(
+					filteredToken,
+					privateKey,
+					{ algorithms: "RS256" },
+					(err, decoded) => {
+						if (err) {
+							throw new HttpForbidden("INVALID_PAYMENT_TOKEN_2", []);
+						}
+
+						// if (decoded.env !== process.env.NODE_ENV) {
+						// 	console.log("TOKEN ENVIRONMENT: " + decoded.env);
+						// 	throw new HttpForbidden("TOKEN_ENVIRONMENT_MISMATCHED", []);
+						// } else
+						if (
+							decoded.aud == "parkncharge-app" &&
+							decoded.typ == "Bearer" &&
+							decoded.usr == "serv" &&
+							decoded.sub == "parkncharge"
+						) {
+							req.payment_token_valid = "VALID";
+							next();
+						}
+					}
+				);
+			} catch (err) {
+				return res.status(err.status || 500).json({
+					status: err.status || 500,
+					data: err.data || [],
+					message: err.message || "Internal Server Error",
+				});
 			}
 		};
 	}

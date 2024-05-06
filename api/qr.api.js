@@ -13,6 +13,7 @@ const QRService = require("../services/QRService");
  */
 module.exports = (app) => {
 	const service = new QRService();
+	const tokenMiddleware = new TokenMiddleware();
 	/**
 	 * This function will be used by the express-validator for input validation,
 	 * and to be attached to APIs middleware.
@@ -178,6 +179,7 @@ module.exports = (app) => {
 					paid_hour,
 					amount,
 					payment_type,
+					homelink,
 				} = req.body;
 
 				logger.info({
@@ -209,6 +211,7 @@ module.exports = (app) => {
 						paid_hour,
 						amount,
 						payment_type,
+						homelink,
 					});
 				}
 
@@ -229,6 +232,62 @@ module.exports = (app) => {
 					},
 				});
 
+				return res.status(err.status || 500).json({
+					status: err.status || 500,
+					data: err.data || [],
+					message: err.message || "Internal Server Error",
+				});
+			}
+		}
+	);
+
+	app.get(
+		"/qr/api/v1/payments/guest/gcash/:token/:user_id/:payment_id",
+		[tokenMiddleware.AuthenticateGCashPaymentToken()],
+
+		/**
+		 * @param {import('express').Request} req
+		 * @param {import('express').Response} res
+		 */
+		async (req, res) => {
+			try {
+				const { token, user_id, payment_id } = req.params;
+
+				logger.info({
+					QR_GCASH_PAYMENT_API_REQUEST: {
+						data: {
+							token,
+							user_id,
+							payment_id,
+							payment_token_valid: req.payment_token_valid,
+						},
+					},
+				});
+
+				const result = await service.GCashPayment({
+					token,
+					payment_id,
+					payment_token_valid: req.payment_token_valid,
+				});
+
+				logger.info({
+					QR_GCASH_PAYMENT_API_RESPONSE: {
+						message: "SUCCESS",
+					},
+				});
+
+				return res
+					.status(200)
+					.json({ status: 200, data: result, message: "Success" });
+			} catch (err) {
+				logger.error({
+					QR_GCASH_PAYMENT_ERROR: {
+						err,
+						message: err.message,
+					},
+				});
+
+				console.log(err);
 				return res.status(err.status || 500).json({
 					status: err.status || 500,
 					data: err.data || [],

@@ -37,7 +37,7 @@ module.exports = class QRRepository {
 	}
 
 	AddGuest(data, connection) {
-		const QUERY = `CALL WEB_QR_ADD_GUEST(?,?,?,?,?,?)`;
+		const QUERY = `CALL WEB_QR_ADD_GUEST(?,?,?,?,?,?,?)`;
 
 		return new Promise((resolve, reject) => {
 			connection.query(
@@ -49,6 +49,7 @@ module.exports = class QRRepository {
 					data.paid_hour,
 					data.rfid,
 					data.otp,
+					data.homelink,
 				],
 				(err, result) => {
 					if (err) {
@@ -109,10 +110,11 @@ module.exports = class QRRepository {
 			timeslot_time,
 			next_timeslot_date,
 			rfid,
+			homelink,
 		},
 		connection
 	) {
-		const QUERY = `CALL WEB_QR_RESERVE_WITH_PAYMENT(?,?,?,?,?,?,?,?,?)`;
+		const QUERY = `CALL WEB_QR_RESERVE_WITH_PAYMENT(?,?,?,?,?,?,?,?,?,?)`;
 
 		return new Promise((resolve, reject) => {
 			connection.query(
@@ -127,6 +129,7 @@ module.exports = class QRRepository {
 					timeslot_time,
 					next_timeslot_date,
 					rfid,
+					homelink,
 				],
 				(err, result) => {
 					if (err) {
@@ -168,11 +171,7 @@ module.exports = class QRRepository {
 		return new Promise((resolve, reject) => {
 			mysql.query(
 				QUERY,
-				[
-					data.user_driver_guest_id,
-					data.timeslot_id,
-					data.next_timeslot_id,
-				],
+				[data.user_driver_guest_id, data.timeslot_id, data.next_timeslot_id],
 				(err, result) => {
 					if (err) {
 						reject(err);
@@ -211,13 +210,31 @@ module.exports = class QRRepository {
 		return new Promise((resolve, reject) => {
 			connection.query(
 				QUERY,
-				[
-					guest_id,
-					evse_qr_rate_id,
-					amount,
-					payment_type,
-					payment_status,
-				],
+				[guest_id, evse_qr_rate_id, amount, payment_type, payment_status],
+				(err, result) => {
+					if (err) {
+						reject(err);
+					}
+
+					resolve(result);
+				}
+			);
+		});
+	}
+
+	UpdateQRGuestGCashPayment({
+		user_id,
+		status,
+		transaction_id,
+		description,
+		payment_id,
+	}) {
+		const QUERY = `CALL WEB_QR_UPDATE_GCASH_PAYMENT(?,?,?,?,?)`;
+
+		return new Promise((resolve, reject) => {
+			mysql.query(
+				QUERY,
+				[user_id, status, transaction_id, description, payment_id],
 				(err, result) => {
 					if (err) {
 						reject(err);
@@ -295,6 +312,27 @@ module.exports = class QRRepository {
 					resolve(result);
 				}
 			);
+		});
+	}
+
+	GetGuestPaymentDetails(paymentID) {
+		const QUERY = `
+			SELECT
+				user_driver_guest_id, amount, payment_type, payment_status, transaction_id
+			FROM 
+				user_driver_qr_payment_records
+			WHERE
+				id = ?
+		`;
+
+		return new Promise((resolve, reject) => {
+			mysql.query(QUERY, [paymentID], (err, result) => {
+				if (err) {
+					reject(err);
+				}
+
+				resolve(result);
+			});
 		});
 	}
 };

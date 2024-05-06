@@ -36,6 +36,7 @@ module.exports = class QRService {
 		current_time,
 		current_date,
 		paid_hour,
+		homelink,
 	}) {
 		let conn = null;
 
@@ -49,10 +50,7 @@ module.exports = class QRService {
 				digits: true,
 			});
 
-			const rfid = uuidv4()
-				.replace(/-/g, "")
-				.substring(0, 12)
-				.toUpperCase();
+			const rfid = uuidv4().replace(/-/g, "").substring(0, 12).toUpperCase();
 
 			const timeArray = current_time.split(":");
 
@@ -78,13 +76,13 @@ module.exports = class QRService {
 					paid_hour,
 					rfid,
 					otp,
+					homelink,
 				},
 				conn
 			);
 
 			const addGuestStatus = addGuestResponse[0][0].STATUS;
-			const user_driver_guest_id =
-				addGuestResponse[0][0].user_driver_guest_id;
+			const user_driver_guest_id = addGuestResponse[0][0].user_driver_guest_id;
 
 			if (addGuestStatus !== "SUCCESS") {
 				conn.rollback();
@@ -153,6 +151,7 @@ module.exports = class QRService {
 		paid_hour,
 		amount,
 		payment_type,
+		homelink,
 	}) {
 		function cleanAmountForTopup(amount) {
 			const numberStr = amount.toString();
@@ -174,10 +173,7 @@ module.exports = class QRService {
 		try {
 			connection = await this.#repository.GetConnection();
 
-			const rfid = uuidv4()
-				.replace(/-/g, "")
-				.substring(0, 12)
-				.toUpperCase();
+			const rfid = uuidv4().replace(/-/g, "").substring(0, 12).toUpperCase();
 
 			const timeArray = current_time.split(":");
 
@@ -206,6 +202,7 @@ module.exports = class QRService {
 					timeslot_time: timeslot.end,
 					next_timeslot_date: nextTimeslot.date,
 					rfid,
+					homelink,
 				},
 				connection
 			);
@@ -290,8 +287,7 @@ module.exports = class QRService {
 
 				if (
 					sourceResponse &&
-					sourceResponse.data.attributes.status ===
-						"awaiting_next_action"
+					sourceResponse.data.attributes.status === "awaiting_next_action"
 				) {
 					await this.#repository.AddGuestMayaPayment(
 						{
@@ -301,8 +297,7 @@ module.exports = class QRService {
 							payment_type: "maya",
 							payment_status: "pending",
 							transaction_id: sourceResponse.data.id,
-							client_key:
-								sourceResponse.data.attributes.client_key,
+							client_key: sourceResponse.data.attributes.client_key,
 						},
 						connection
 					);
@@ -321,6 +316,97 @@ module.exports = class QRService {
 			throw err;
 		} finally {
 			if (connection) connection.release();
+		}
+	}
+
+	async GCashPayment({ token, payment_id, payment_token_valid }) {
+		logger.info({
+			PAYMENT_METHOD: {
+				class: "QRService",
+				method: "GCashPayment",
+			},
+		});
+
+		function cleanAmountForTopup(amount) {
+			amount = amount.replace(" ", "");
+			amount = amount.replace(".", "");
+			amount = amount.replace(",", "");
+			amount = amount.replace(/ /g, "");
+			amount = amount.replace(/[^A-Za-z0-9\-]/, "");
+			return amount;
+		}
+
+		let details = await this.#repository.GetGuestPaymentDetails(payment_id);
+		let status = token.substring(token.length - 1);
+		let parsedToken = token.substring(0, token.length - 2);
+
+		if (details[0]?.payment_status === "paid")
+			throw new HttpBadRequest("ALREADY_PAID", []);
+
+		if (details[0]?.payment_status === "failed")
+			throw new HttpBadRequest("ALREADY_FAILED", []);
+
+		if (status === "0") {
+			logger.info({
+				QR_PAYMENT_FAILED: {
+					status,
+					class: "QRService",
+				},
+			});
+
+			const result = await this.#repository.UpdateQRGuestGCashPayment({
+				status: "failed",
+				user_id: details[0].user_driver_guest_id,
+				payment_id,
+			});
+
+			logger.info({
+				QR_PAYMENT_FAILED_EXIT: {
+					message: "SUCCESS",
+				},
+			});
+
+			return { payment_status: "FAILED", home_link: result[0][0].home_link };
+		}
+
+		if (payment_token_valid) {
+			if (details.length === 0)
+				throw new HttpBadRequest("PAYMENT_ID_NOT_FOUND", []);
+
+			if (details[0]?.payment_status === "paid")
+				throw new HttpBadRequest("ALREADY_PAID", []);
+			else if (details[0]?.payment_status === "failed")
+				throw new HttpBadRequest("ALREADY_FAILED", []);
+			else {
+				const description = uuidv4();
+
+				const result = await this.#RequestToGCashPaymentURL({
+					amount: cleanAmountForTopup(String(details[0].amount)),
+					description,
+					id: details[0].transaction_id,
+					token: parsedToken,
+				});
+
+				const paymentUpdateResult =
+					await this.#repository.UpdateQRGuestGCashPayment({
+						user_id: details[0].user_driver_guest_id,
+						status: result.data.attributes.status,
+						transaction_id: details[0].transaction_id,
+						description,
+						payment_id,
+					});
+
+				const status = paymentUpdateResult[0][0].STATUS;
+				const status_type = paymentUpdateResult[0][0].status_type;
+
+				if (status_type == "bad_request") throw new HttpBadRequest(status, []);
+
+				if (result.data.attributes.status === "paid")
+					return {
+						payment_status: "SUCCESS",
+						home_link: paymentUpdateResult[0][0].home_link,
+					};
+			}
 		}
 	}
 
@@ -358,8 +444,7 @@ module.exports = class QRService {
 			{
 				headers: {
 					Accept: "application/json",
-					Authorization:
-						"Basic " + process.env.AUTHMODULE_AUTHORIZATION,
+					Authorization: "Basic " + process.env.AUTHMODULE_AUTHORIZATION,
 					"Content-Type": "application/json",
 				},
 			}
@@ -401,12 +486,30 @@ module.exports = class QRService {
 		return { status: result.status, data: result.data.result.data };
 	}
 
-	async #RequestToMayaSourceURL({
-		auth_token,
-		user_id,
-		description,
-		amount,
-	}) {
+	async #RequestToGCashPaymentURL({ amount, description, id, token }) {
+		const result = await axios.post(
+			process.env.GCASH_PAYMENT_URL,
+			{
+				amount,
+				description,
+				currency: "PHP",
+				statement_descriptor: "ParkNcharge",
+				id,
+				type: "source",
+			},
+			{
+				headers: {
+					Accept: "application/json",
+					Authorization: "Bearer " + token,
+					"Content-Type": "application/json",
+				},
+			}
+		);
+
+		return result.data;
+	}
+
+	async #RequestToMayaSourceURL({ auth_token, user_id, description, amount }) {
 		const result = await axios.post(
 			process.env.MAYA_PAYMENT_URL,
 			{
