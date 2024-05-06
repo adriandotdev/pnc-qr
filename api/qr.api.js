@@ -297,6 +297,51 @@ module.exports = (app) => {
 		}
 	);
 
+	app.get(
+		"/qr/api/v1/payments/guest/maya/:token/:transaction_id",
+		[tokenMiddleware.AuthenticateMayaPaymentToken()],
+		/**
+		 * @param {import('express').Request} req
+		 * @param {import('express').Response} res
+		 */
+		async (req, res) => {
+			try {
+				const { token, transaction_id } = req.params;
+
+				logger.info({
+					QR_MAYA_PAYMENT_REQUEST: {
+						data: {
+							token,
+							transaction_id,
+							payment_token_valid: req.payment_token_valid,
+						},
+						message: "SUCCESS",
+					},
+				});
+
+				logger.info({
+					QR_MAYA_PAYMENT_RESPONSE: {},
+				});
+
+				return res
+					.status(200)
+					.json({ status: 200, data: [], message: "Success" });
+			} catch (err) {
+				logger.error({
+					QR_MAYA_PAYMENT_ERROR: {
+						err,
+						message: err.message,
+					},
+				});
+				return res.status(err.status || 500).json({
+					status: err.status || 500,
+					data: err.data || [],
+					message: err.message || "Internal Server Error",
+				});
+			}
+		}
+	);
+
 	app.post(
 		"/qr/api/v1/qr/otp/verify/:guest_id",
 		[],

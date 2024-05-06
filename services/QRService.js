@@ -410,6 +410,8 @@ module.exports = class QRService {
 		}
 	}
 
+	async MayaPayment({}) {}
+
 	async VerifyOTP(data) {
 		const result = await this.#repository.VerifyOTP(data);
 

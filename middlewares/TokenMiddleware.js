@@ -335,4 +335,59 @@ module.exports = class TokenMiddleware {
 			}
 		};
 	}
+
+	AuthenticateMayaPaymentToken() {
+		/**
+		 * @param {import('express').Request} req
+		 * @param {import('express').Response} res
+		 * @param {import('express').NextFunction} next
+		 */
+		return async (req, res, next) => {
+			try {
+				let token = req.params.token;
+
+				if (token === null || token === undefined)
+					throw new HttpForbidden("INVALID_PAYMENT_TOKEN_1", []);
+
+				let privateKey = fs.readFileSync(
+					path.dirname(__dirname) +
+						path.sep +
+						"files" +
+						path.sep +
+						"public_key.pem"
+				);
+
+				jwt.verify(
+					token,
+					privateKey,
+					{ algorithms: "RS256" },
+					(err, decoded) => {
+						if (err) {
+							throw new HttpForbidden("INVALID_PAYMENT_TOKEN_2", []);
+						}
+
+						// if (decoded.env !== process.env.NODE_ENV) {
+						// 	console.log("TOKEN ENVIRONMENT: " + decoded.env);
+						// 	throw new HttpForbidden("TOKEN_ENVIRONMENT_MISMATCHED", []);
+						// } else
+						if (
+							decoded.aud == "parkncharge-app" &&
+							decoded.typ == "Bearer" &&
+							decoded.usr == "serv" &&
+							decoded.sub == "parkncharge"
+						) {
+							req.payment_token_valid = "VALID";
+							next();
+						}
+					}
+				);
+			} catch (err) {
+				return res.status(err.status || 500).json({
+					status: err.status || 500,
+					data: err.data || [],
+					message: err.message || "Internal Server Error",
+				});
+			}
+		};
+	}
 };
