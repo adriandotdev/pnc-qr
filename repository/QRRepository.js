@@ -246,6 +246,20 @@ module.exports = class QRRepository {
 		});
 	}
 
+	UpdateQRGuestMayaPayment({ status, transaction_id }) {
+		const QUERY = `CALL WEB_QR_UPDATE_MAYA_PAYMENT(?,?)`;
+
+		return new Promise((resolve, reject) => {
+			mysql.query(QUERY, [status, transaction_id], (err, result) => {
+				if (err) {
+					reject(err);
+				}
+
+				resolve(result);
+			});
+		});
+	}
+
 	UpdateGuestGCashPayment(
 		{ topup_id, payment_status, transaction_id },
 		connection
@@ -315,7 +329,7 @@ module.exports = class QRRepository {
 		});
 	}
 
-	GetGuestPaymentDetails(paymentID) {
+	GetGuestGCashPaymentDetails(paymentID) {
 		const QUERY = `
 			SELECT
 				user_driver_guest_id, amount, payment_type, payment_status, transaction_id
@@ -327,6 +341,27 @@ module.exports = class QRRepository {
 
 		return new Promise((resolve, reject) => {
 			mysql.query(QUERY, [paymentID], (err, result) => {
+				if (err) {
+					reject(err);
+				}
+
+				resolve(result);
+			});
+		});
+	}
+
+	GetGuestMayaPaymentDetails(transactionID) {
+		const QUERY = `
+			SELECT
+				user_driver_guest_id, amount, payment_type, payment_status, transaction_id, maya_client_key 
+			FROM 
+				user_driver_qr_payment_records
+			WHERE
+				transaction_id = ?
+		`;
+
+		return new Promise((resolve, reject) => {
+			mysql.query(QUERY, [transactionID], (err, result) => {
 				if (err) {
 					reject(err);
 				}

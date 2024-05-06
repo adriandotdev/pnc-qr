@@ -319,8 +319,16 @@ module.exports = (app) => {
 					},
 				});
 
+				const result = await service.MayaPayment({
+					token,
+					transaction_id,
+					payment_token_valid: req.payment_token_valid,
+				});
+
 				logger.info({
-					QR_MAYA_PAYMENT_RESPONSE: {},
+					QR_MAYA_PAYMENT_RESPONSE: {
+						message: "SUCCESS",
+					},
 				});
 
 				return res
@@ -333,6 +341,8 @@ module.exports = (app) => {
 						message: err.message,
 					},
 				});
+
+				console.log(err);
 				return res.status(err.status || 500).json({
 					status: err.status || 500,
 					data: err.data || [],

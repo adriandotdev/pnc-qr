@@ -336,7 +336,9 @@ module.exports = class QRService {
 			return amount;
 		}
 
-		let details = await this.#repository.GetGuestPaymentDetails(payment_id);
+		let details = await this.#repository.GetGuestGCashPaymentDetails(
+			payment_id
+		);
 		let status = token.substring(token.length - 1);
 		let parsedToken = token.substring(0, token.length - 2);
 
@@ -410,7 +412,51 @@ module.exports = class QRService {
 		}
 	}
 
-	async MayaPayment({}) {}
+	async MayaPayment({ token, transaction_id, payment_token_valid }) {
+		if (payment_token_valid) {
+			let details = await this.#repository.GetGuestMayaPaymentDetails(
+				transaction_id
+			);
+
+			if (details.length === 0)
+				throw new HttpBadRequest("TRANSACTION_ID_NOT_FOUND", []);
+
+			const currentPaymentStatus = details[0].payment_status;
+
+			if (currentPaymentStatus === "paid")
+				throw new HttpBadRequest("ALREADY_PAID", []);
+			else if (currentPaymentStatus === "failed")
+				throw new HttpBadRequest("ALREADY_FAILED", []);
+			else {
+				const result = await this.#RequestToMayaPaymentURL({
+					token,
+					transaction_id,
+					client_key: details[0].maya_client_key,
+				});
+
+				let status =
+					result === "succeeded"
+						? "paid"
+						: result === "awaiting_payment_method" && "failed";
+
+				const updateMayaPaymentResult =
+					await this.#repository.UpdateQRGuestMayaPayment({
+						status,
+						transaction_id,
+					});
+
+				return status === "paid"
+					? {
+							payment_status: "SUCCESS",
+							homelink: updateMayaPaymentResult[0][0].homelink,
+					  }
+					: {
+							payment_status: "FAILED",
+							homelink: updateMayaPaymentResult[0][0].homelink,
+					  };
+			}
+		}
+	}
 
 	async VerifyOTP(data) {
 		const result = await this.#repository.VerifyOTP(data);
@@ -534,6 +580,35 @@ module.exports = class QRService {
 		);
 
 		return result.data;
+	}
+
+	async #RequestToMayaPaymentURL({ token, transaction_id, client_key }) {
+		const result = await axios.post(
+			process.env.MAYA_GET_PAYMENT_URL,
+			{
+				payment_intent: transaction_id,
+				client_key,
+			},
+			{
+				headers: {
+					Accept: "application/json",
+					Authorization: "Bearer " + token,
+					"Content-Type": "application/json",
+				},
+			}
+		);
+
+		const status = result.data.data.attributes.status;
+
+		if (status === "processing") {
+			return await this.#RequestToMayaPaymentURL({
+				token,
+				transaction_id,
+				client_key,
+			});
+		}
+
+		return status;
 	}
 
 	async #GetTimeslots(locationID, evseUID, connectorID, currentHour) {
