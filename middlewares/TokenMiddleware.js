@@ -290,7 +290,7 @@ module.exports = class TokenMiddleware {
 				let token = req.params.token;
 
 				if (token === null || token === undefined)
-					throw new HttpForbidden("INVALID_PAYMENT_TOKEN_1", []);
+					throw new HttpForbidden("INVALID_PAYMENT_TOKEN", []);
 
 				let filteredToken = token.substring(0, token.length - 2);
 
@@ -307,9 +307,11 @@ module.exports = class TokenMiddleware {
 					privateKey,
 					{ algorithms: "RS256" },
 					(err, decoded) => {
-						if (err) {
-							throw new HttpForbidden("INVALID_PAYMENT_TOKEN_2", []);
-						}
+						if (err instanceof jwt.TokenExpiredError)
+							throw new HttpForbidden("TOKEN_EXPIRED", []);
+
+						if (err instanceof jwt.JsonWebTokenError)
+							throw new HttpUnauthorized("INVALID_PAYMENT_TOKEN", []);
 
 						// if (decoded.env !== process.env.NODE_ENV) {
 						// 	console.log("TOKEN ENVIRONMENT: " + decoded.env);
@@ -347,7 +349,7 @@ module.exports = class TokenMiddleware {
 				let token = req.params.token;
 
 				if (token === null || token === undefined)
-					throw new HttpForbidden("INVALID_PAYMENT_TOKEN_1", []);
+					throw new HttpForbidden("INVALID_PAYMENT_TOKEN", []);
 
 				let privateKey = fs.readFileSync(
 					path.dirname(__dirname) +
@@ -362,9 +364,11 @@ module.exports = class TokenMiddleware {
 					privateKey,
 					{ algorithms: "RS256" },
 					(err, decoded) => {
-						if (err) {
-							throw new HttpForbidden("INVALID_PAYMENT_TOKEN_2", []);
-						}
+						if (err instanceof jwt.TokenExpiredError)
+							throw new HttpForbidden("TOKEN_EXPIRED", []);
+
+						if (err instanceof jwt.JsonWebTokenError)
+							throw new HttpUnauthorized("INVALID_PAYMENT_TOKEN", []);
 
 						// if (decoded.env !== process.env.NODE_ENV) {
 						// 	console.log("TOKEN ENVIRONMENT: " + decoded.env);
