@@ -639,7 +639,16 @@ module.exports = class QRService {
 
 	async CheckEVSE(qrCode, evseUID) {
 		try {
-			const result = await this.#repository.CheckEVSE(qrCode, evseUID);
+			const qr = qrCode.split("-");
+
+			if (qr[0] !== "QR")
+				throw new HttpBadRequest("INVALID_QR_CODE_FORMAT", [
+					{ message: "Valid QR code format are QR-****" },
+				]);
+
+			const parseQRNumber = parseInt(qr[1], 10);
+
+			const result = await this.#repository.CheckEVSE(parseQRNumber, evseUID);
 
 			const evseDetails = result[0][0];
 			const status = result[0][0].STATUS;
