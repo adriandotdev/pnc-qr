@@ -242,7 +242,7 @@ module.exports = (app) => {
 	);
 
 	app.get(
-		"/qr/api/v1/payments/guest/gcash/:token/:user_id/:payment_id",
+		"/qr/api/v1/payments/guest/gcash/:token/:payment_id",
 		[tokenMiddleware.AuthenticateGCashPaymentToken()],
 
 		/**
@@ -257,7 +257,6 @@ module.exports = (app) => {
 					QR_GCASH_PAYMENT_API_REQUEST: {
 						data: {
 							token,
-							user_id,
 							payment_id,
 							payment_token_valid: req.payment_token_valid,
 						},
