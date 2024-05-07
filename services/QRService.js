@@ -680,12 +680,13 @@ module.exports = class QRService {
 
 			const evseDetails = result[0][0];
 			const status = result[0][0].STATUS;
+			const connectors = result[1];
 
 			if (status !== "SUCCESS") throw new HttpBadRequest(status, []);
 
 			const rates = await this.#repository.GetQRRates(evseUID);
 
-			return { ...evseDetails, rates };
+			return { ...evseDetails, connectors, rates };
 		} catch (err) {
 			throw err;
 		}
