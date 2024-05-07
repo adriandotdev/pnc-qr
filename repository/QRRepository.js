@@ -370,4 +370,32 @@ module.exports = class QRRepository {
 			});
 		});
 	}
+
+	CheckAndUpdateConnectorStatus(evseUID, connectorID) {
+		const QUERY = `CALL WEB_USER_CHECK_AND_UPDATE_CONNECTOR_STATUS(?,?)`;
+
+		return new Promise((resolve, reject) => {
+			mysql.query(QUERY, [evseUID, connectorID], (err, result) => {
+				if (err) {
+					reject(err);
+				}
+
+				resolve(result);
+			});
+		});
+	}
+
+	CheckAndUpdateEVSEStatus(evseUID) {
+		const query = `CALL WEB_USER_CHECK_AND_UPDATE_EVSE_STATUS(?)`;
+
+		return new Promise((resolve, reject) => {
+			mysql.query(query, evseUID, (err, result) => {
+				if (err) {
+					reject(err);
+				}
+
+				resolve(result);
+			});
+		});
+	}
 };

@@ -319,7 +319,13 @@ module.exports = class QRService {
 		}
 	}
 
-	async GCashPayment({ token, payment_id, payment_token_valid }) {
+	async GCashPayment({
+		token,
+		payment_id,
+		evse_uid,
+		connector_id,
+		payment_token_valid,
+	}) {
 		logger.info({
 			PAYMENT_METHOD: {
 				class: "QRService",
@@ -403,16 +409,29 @@ module.exports = class QRService {
 
 				if (status_type == "bad_request") throw new HttpBadRequest(status, []);
 
-				if (result.data.attributes.status === "paid")
+				if (result.data.attributes.status === "paid") {
+					await this.#repository.CheckAndUpdateConnectorStatus(
+						evse_uid,
+						connector_id
+					);
+					await this.#repository.CheckAndUpdateEVSEStatus(evse_uid);
+
 					return {
 						payment_status: "SUCCESS",
 						home_link: paymentUpdateResult[0][0].home_link,
 					};
+				}
 			}
 		}
 	}
 
-	async MayaPayment({ token, transaction_id, payment_token_valid }) {
+	async MayaPayment({
+		token,
+		transaction_id,
+		evse_uid,
+		connector_id,
+		payment_token_valid,
+	}) {
 		if (payment_token_valid) {
 			let details = await this.#repository.GetGuestMayaPaymentDetails(
 				transaction_id
@@ -444,6 +463,15 @@ module.exports = class QRService {
 						status,
 						transaction_id,
 					});
+
+				if (status === "paid") {
+					await this.#repository.CheckAndUpdateConnectorStatus(
+						evse_uid,
+						connector_id
+					);
+
+					await this.#repository.CheckAndUpdateEVSEStatus(evse_uid);
+				}
 
 				return status === "paid"
 					? {

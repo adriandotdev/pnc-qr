@@ -242,7 +242,7 @@ module.exports = (app) => {
 	);
 
 	app.get(
-		"/qr/api/v1/payments/guest/gcash/:token/:payment_id",
+		"/qr/api/v1/payments/guest/gcash/:token/:payment_id/:evse_uid/:connector_id",
 		[tokenMiddleware.AuthenticateGCashPaymentToken()],
 
 		/**
@@ -251,13 +251,15 @@ module.exports = (app) => {
 		 */
 		async (req, res) => {
 			try {
-				const { token, user_id, payment_id } = req.params;
+				const { token, payment_id, evse_uid, connector_id } = req.params;
 
 				logger.info({
 					QR_GCASH_PAYMENT_API_REQUEST: {
 						data: {
 							token,
 							payment_id,
+							evse_uid,
+							connector_id,
 							payment_token_valid: req.payment_token_valid,
 						},
 					},
@@ -266,6 +268,8 @@ module.exports = (app) => {
 				const result = await service.GCashPayment({
 					token,
 					payment_id,
+					evse_uid,
+					connector_id,
 					payment_token_valid: req.payment_token_valid,
 				});
 
@@ -297,7 +301,7 @@ module.exports = (app) => {
 	);
 
 	app.get(
-		"/qr/api/v1/payments/guest/maya/:token/:transaction_id",
+		"/qr/api/v1/payments/guest/maya/:token/:transaction_id/:evse_uid/:connector_id",
 		[tokenMiddleware.AuthenticateMayaPaymentToken()],
 		/**
 		 * @param {import('express').Request} req
@@ -305,13 +309,15 @@ module.exports = (app) => {
 		 */
 		async (req, res) => {
 			try {
-				const { token, transaction_id } = req.params;
+				const { token, evse_uid, connector_id, transaction_id } = req.params;
 
 				logger.info({
 					QR_MAYA_PAYMENT_REQUEST: {
 						data: {
 							token,
 							transaction_id,
+							evse_uid,
+							connector_id,
 							payment_token_valid: req.payment_token_valid,
 						},
 						message: "SUCCESS",
@@ -321,6 +327,8 @@ module.exports = (app) => {
 				const result = await service.MayaPayment({
 					token,
 					transaction_id,
+					evse_uid,
+					connector_id,
 					payment_token_valid: req.payment_token_valid,
 				});
 
