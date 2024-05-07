@@ -5,6 +5,7 @@ const logger = require("../config/winston");
 
 const QRService = require("../services/QRService");
 
+const { HttpUnprocessableEntity } = require("../utils/HttpError");
 // Import your SERVICE HERE
 // Import MISC HERE
 
@@ -159,7 +160,7 @@ module.exports = (app) => {
 	);
 
 	app.post(
-		"/qr/api/v1/qr/reserve",
+		"/qr/api/v1/qr/charge",
 		[],
 
 		/**
@@ -168,6 +169,8 @@ module.exports = (app) => {
 		 */
 		async (req, res) => {
 			try {
+				validate(req, res);
+
 				const {
 					is_free,
 					mobile_number,
@@ -176,7 +179,7 @@ module.exports = (app) => {
 					connector_id,
 					current_time,
 					current_date,
-					paid_hour,
+					paid_charge_mins,
 					amount,
 					payment_type,
 					homelink,
@@ -208,7 +211,7 @@ module.exports = (app) => {
 						connector_id,
 						current_time,
 						current_date,
-						paid_hour,
+						paid_charge_mins,
 						amount,
 						payment_type,
 						homelink,

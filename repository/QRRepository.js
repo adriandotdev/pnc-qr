@@ -102,7 +102,7 @@ module.exports = class QRRepository {
 	ReserveWithPayment(
 		{
 			mobile_number,
-			paid_hour,
+			paid_charge_mins,
 			timeslot_id,
 			next_timeslot_id,
 			current_time,
@@ -123,7 +123,7 @@ module.exports = class QRRepository {
 					mobile_number,
 					timeslot_id,
 					next_timeslot_id,
-					paid_hour,
+					paid_charge_mins,
 					current_time,
 					current_date,
 					timeslot_time,

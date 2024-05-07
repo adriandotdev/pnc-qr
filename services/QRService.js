@@ -35,7 +35,7 @@ module.exports = class QRService {
 		connector_id,
 		current_time,
 		current_date,
-		paid_hour,
+		paid_charge_mins,
 		homelink,
 	}) {
 		let conn = null;
@@ -73,7 +73,7 @@ module.exports = class QRService {
 					is_free,
 					mobile_number,
 					timeslot_id: timeslot.timeslot_id,
-					paid_hour,
+					paid_charge_mins,
 					rfid,
 					otp,
 					homelink,
@@ -148,7 +148,7 @@ module.exports = class QRService {
 		connector_id,
 		current_time,
 		current_date,
-		paid_hour,
+		paid_charge_mins,
 		amount,
 		payment_type,
 		homelink,
@@ -194,7 +194,7 @@ module.exports = class QRService {
 			const reserveResponse = await this.#repository.ReserveWithPayment(
 				{
 					mobile_number,
-					paid_hour,
+					paid_charge_mins,
 					timeslot_id: timeslot.timeslot_id,
 					next_timeslot_id: nextTimeslot.timeslot_id,
 					current_time,
