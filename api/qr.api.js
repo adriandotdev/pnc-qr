@@ -6,8 +6,6 @@ const logger = require("../config/winston");
 const QRService = require("../services/QRService");
 
 const { HttpUnprocessableEntity } = require("../utils/HttpError");
-// Import your SERVICE HERE
-// Import MISC HERE
 
 /**
  * @param {import('express').Express} app
@@ -34,12 +32,12 @@ module.exports = (app) => {
 
 	app.get(
 		"/qr/api/v1/qr/rates/:evse_uid",
-		[],
+		[tokenMiddleware.BasicTokenVerifier()],
 		/**
 		 * @param {import('express').Request} req
 		 * @param {import('express').Response} res
 		 */
-		async (req, res) => {
+		async (req, res, next) => {
 			try {
 				const { evse_uid } = req.params;
 
@@ -64,29 +62,19 @@ module.exports = (app) => {
 					.status(200)
 					.json({ status: 200, data: result, message: "Success" });
 			} catch (err) {
-				logger.error({
-					QR_RATES_LIST_ERROR: {
-						err,
-						message: err.message,
-					},
-				});
-				return res.status(err.status || 500).json({
-					status: err.status || 500,
-					data: err.data || [],
-					message: err.message || "Internal Server Error",
-				});
+				next(err);
 			}
 		}
 	);
 
 	app.get(
 		"/qr/api/v1/qr/:code/:evse_uid",
-		[],
+		[tokenMiddleware.BasicTokenVerifier()],
 		/**
 		 * @param {import('express').Request} req
 		 * @param {import('express').Response} res
 		 */
-		async (req, res) => {
+		async (req, res, next) => {
 			try {
 				const { code, evse_uid } = req.params;
 
@@ -113,20 +101,7 @@ module.exports = (app) => {
 					.status(200)
 					.json({ status: 200, data: result, message: "Success" });
 			} catch (err) {
-				logger.error({
-					GET_EVSE_DETAILS: {
-						err,
-						message: err.message,
-					},
-				});
-
-				console.log(err);
-
-				return res.status(err.status || 500).json({
-					status: err.status || 500,
-					data: err.data || [],
-					message: err.message || "Internal Server Error",
-				});
+				next(err);
 			}
 		}
 	);
@@ -161,13 +136,13 @@ module.exports = (app) => {
 
 	app.post(
 		"/qr/api/v1/qr/charge",
-		[],
+		[tokenMiddleware.BasicTokenVerifier()],
 
 		/**
 		 * @param {import('express').Request} req
 		 * @param {import('express').Response} res
 		 */
-		async (req, res) => {
+		async (req, res, next) => {
 			try {
 				validate(req, res);
 
@@ -228,18 +203,7 @@ module.exports = (app) => {
 					.status(200)
 					.json({ status: 200, data: result, message: "Success" });
 			} catch (err) {
-				logger.error({
-					QR_RESERVE_API_ERROR: {
-						err,
-						message: err.message,
-					},
-				});
-
-				return res.status(err.status || 500).json({
-					status: err.status || 500,
-					data: err.data || [],
-					message: err.message || "Internal Server Error",
-				});
+				next(err);
 			}
 		}
 	);
@@ -364,7 +328,7 @@ module.exports = (app) => {
 
 	app.post(
 		"/qr/api/v1/qr/otp/verify/:guest_id",
-		[],
+		[tokenMiddleware.BasicTokenVerifier()],
 
 		/**
 		 * @param {import('express').Request} req
@@ -419,7 +383,7 @@ module.exports = (app) => {
 
 	app.post(
 		"/qr/api/v1/qr/otp/resend/:guest_id",
-		[],
+		[tokenMiddleware.BasicTokenVerifier()],
 
 		/**
 		 * @param {import('express').Request} req
@@ -471,4 +435,26 @@ module.exports = (app) => {
 			}
 		}
 	);
+
+	app.use((err, req, res, next) => {
+		logger.error({
+			API_REQUEST_ERROR: {
+				message: err.message,
+				stack: err.stack.replace(/\\/g, "/"), // Include stack trace for debugging
+				request: {
+					method: req.method,
+					url: req.url,
+				},
+			},
+		});
+
+		const status = err.status || 500;
+		const message = err.message || "Internal Server Error";
+
+		res.status(status).json({
+			status,
+			message,
+			data: err.data || [],
+		});
+	});
 };

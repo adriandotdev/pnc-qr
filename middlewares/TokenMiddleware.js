@@ -87,23 +87,7 @@ module.exports = class TokenMiddleware {
 				});
 				next();
 			} catch (err) {
-				logger.error({
-					ACCESS_TOKEN_VERIFIER_MIDDLEWARE_ERROR: {
-						message: err.message,
-					},
-				});
-
-				if (err !== null) {
-					return res.status(err.status || 500).json({
-						status: err.status || 500,
-						data: err.data,
-						message: err.message,
-					});
-				}
-
-				return res
-					.status(500)
-					.json({ status: 500, data: [], message: "Internal Server Error" });
+				next(err);
 			}
 		};
 	}
@@ -193,17 +177,7 @@ module.exports = class TokenMiddleware {
 				});
 				next();
 			} catch (err) {
-				if (err !== null) {
-					return res.status(err.status ? err.status : 500).json({
-						status: err.status ? err.status : 500,
-						data: err.data,
-						message: err.message,
-					});
-				}
-
-				return res
-					.status(500)
-					.json({ status: 500, data: [], message: "Internal Server Error" });
+				next(err);
 			}
 		};
 	}
@@ -226,6 +200,9 @@ module.exports = class TokenMiddleware {
 			});
 
 			try {
+				if (!req.headers.authorization)
+					throw new HttpUnauthorized("MISSING_BASIC_TOKEN", []);
+
 				const securityType = req.headers.authorization.split(" ")[0];
 				const token = req.headers.authorization.split(" ")[1];
 
@@ -258,23 +235,7 @@ module.exports = class TokenMiddleware {
 
 				next();
 			} catch (err) {
-				logger.error({
-					BASIC_TOKEN_VERIFIER_MIDDLEWARE_ERROR: {
-						message: err.message,
-					},
-				});
-
-				if (err !== null) {
-					return res.status(err.status ? err.status : 500).json({
-						status: err.status ? err.status : 500,
-						data: err.data,
-						message: err.message,
-					});
-				}
-
-				return res
-					.status(500)
-					.json({ status: 500, data: [], message: "Internal Server Error" });
+				next(err);
 			}
 		};
 	}
@@ -329,11 +290,7 @@ module.exports = class TokenMiddleware {
 					}
 				);
 			} catch (err) {
-				return res.status(err.status || 500).json({
-					status: err.status || 500,
-					data: err.data || [],
-					message: err.message || "Internal Server Error",
-				});
+				next(err);
 			}
 		};
 	}
@@ -386,11 +343,7 @@ module.exports = class TokenMiddleware {
 					}
 				);
 			} catch (err) {
-				return res.status(err.status || 500).json({
-					status: err.status || 500,
-					data: err.data || [],
-					message: err.message || "Internal Server Error",
-				});
+				next(err);
 			}
 		};
 	}
