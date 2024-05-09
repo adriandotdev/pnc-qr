@@ -444,7 +444,9 @@ module.exports = (app) => {
 				request: {
 					method: req.method,
 					url: req.url,
+					code: err.status || 500,
 				},
+				data: err.data || [],
 			},
 		});
 
@@ -453,8 +455,8 @@ module.exports = (app) => {
 
 		res.status(status).json({
 			status,
-			message,
 			data: err.data || [],
+			message,
 		});
 	});
 };
