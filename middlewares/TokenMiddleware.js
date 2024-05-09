@@ -77,6 +77,7 @@ module.exports = class TokenMiddleware {
 						req.role_id = decode.data.role_id;
 						req.role = decode.data.role;
 						req.access_token = decryptedAccessToken;
+						req.rfid_card_tag = decode.data.rfid_card_tag;
 					}
 				);
 
@@ -167,6 +168,7 @@ module.exports = class TokenMiddleware {
 						req.role_id = decode.data.role_id;
 						req.role = decode.data.role;
 						req.refresh_token = decryptedRefreshToken;
+						req.rfid_card_tag = decode.data.rfid_card_tag;
 					}
 				);
 

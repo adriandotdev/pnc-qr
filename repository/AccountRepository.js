@@ -6,11 +6,30 @@
 const mysql = require("../database/mysql");
 
 module.exports = class AccountRepository {
+	GetConnection() {
+		return new Promise((resolve, reject) => {
+			mysql.getConnection((err, connection) => {
+				if (err) {
+					reject(err);
+				}
+
+				connection.beginTransaction((err) => {
+					if (err) {
+						connection.release();
+						reject(err);
+					}
+
+					resolve(connection);
+				});
+			});
+		});
+	}
+
 	VerifyBasicToken(username, password) {
-		const query = `call WEB_USER_VERIFY_BASIC_TOKEN(?,?)`;
+		const QUERY = `call WEB_USER_VERIFY_BASIC_TOKEN(?,?)`;
 
 		return new Promise((resolve, reject) => {
-			mysql.query(query, [username, password], (err, result) => {
+			mysql.query(QUERY, [username, password], (err, result) => {
 				if (err) {
 					reject(err);
 				}
@@ -26,31 +45,48 @@ module.exports = class AccountRepository {
 	 * @param {Object} parameter {username, password}
 	 * @returns {Promise}
 	 */
-	Login({ username, password }) {
+	Login({ username, password }, connection) {
+		const QUERY = `
+			SELECT 
+				users.id, 
+				users.username, 
+				users.password, 
+				users.role,
+				rfid_cards.rfid_card_tag 
+			FROM 
+				users 
+			INNER JOIN user_drivers ON users.id = user_drivers.user_id
+			INNER JOIN rfid_cards ON rfid_cards.user_driver_id = user_drivers.id
+			WHERE username = ? AND password = MD5(?)
+		`;
 		return new Promise((resolve, reject) => {
-			try {
-				mysql.getConnection((err, connection) => {
-					if (err) {
-						connection.release();
-						reject(err);
-					}
+			connection.query(QUERY, [username, password], (err, result) => {
+				if (err) reject(err);
 
-					connection.query(
-						`SELECT id, username, password, role FROM users WHERE username = ? AND password = MD5(?)`,
-						[username, password],
-						(err, result) => {
-							if (err) reject(err);
-
-							resolve({ result, connection });
-						}
-					);
-				});
-			} catch (err) {
-				reject(err);
-			}
+				resolve(result);
+			});
 		});
 	}
 
+	GetUserPrivileges(id, connection) {
+		const QUERY = `
+			SELECT 
+				* 
+			FROM 
+				user_privileges 
+			WHERE user_id = ?
+		`;
+
+		return new Promise((resolve, reject) => {
+			connection.query(QUERY, [id], (err, result) => {
+				if (err) {
+					reject(err);
+				}
+
+				resolve(result);
+			});
+		});
+	}
 	/**
 	 * @definition This method uses 'authorization_tokens' table. The responsibility of this method is to retrieve a
 	 * record that matches the provided access token.
@@ -58,18 +94,16 @@ module.exports = class AccountRepository {
 	 * @returns {Promise}
 	 */
 	FindAccessToken(accessToken) {
-		return new Promise((resolve, reject) => {
-			mysql.query(
-				"SELECT access_token FROM authorization_tokens WHERE access_token = ?",
-				[accessToken],
-				(err, result) => {
-					if (err) {
-						reject(err);
-					}
+		const QUERY = `SELECT access_token FROM authorization_tokens WHERE access_token = ?`;
 
-					resolve(result);
+		return new Promise((resolve, reject) => {
+			mysql.query(QUERY, [accessToken], (err, result) => {
+				if (err) {
+					reject(err);
 				}
-			);
+
+				resolve(result);
+			});
 		});
 	}
 
@@ -80,18 +114,21 @@ module.exports = class AccountRepository {
 	 * @returns {Promise}
 	 */
 	FindRefreshToken(refreshToken) {
-		return new Promise((resolve, reject) => {
-			mysql.query(
-				"SELECT refresh_token FROM authorization_tokens WHERE refresh_token = ?",
-				[refreshToken],
-				(err, result) => {
-					if (err) {
-						reject(err);
-					}
+		const QUERY = `
+			SELECT 
+				refresh_token 
+			FROM 
+				authorization_tokens 
+			WHERE refresh_token = ?`;
 
-					resolve(result);
+		return new Promise((resolve, reject) => {
+			mysql.query(QUERY, [refreshToken], (err, result) => {
+				if (err) {
+					reject(err);
 				}
-			);
+
+				resolve(result);
+			});
 		});
 	}
 
@@ -102,18 +139,19 @@ module.exports = class AccountRepository {
 	 * @returns {Promise}
 	 */
 	DeleteRefreshTokenWithUserID(userID) {
-		return new Promise((resolve, reject) => {
-			mysql.query(
-				"DELETE FROM authorization_tokens WHERE user_id = ?",
-				[userID],
-				(err, result) => {
-					if (err) {
-						reject(err);
-					}
+		const QUERY = `
+			DELETE FROM 
+				authorization_tokens 
+			WHERE user_id = ?`;
 
-					resolve(result);
+		return new Promise((resolve, reject) => {
+			mysql.query(QUERY, [userID], (err, result) => {
+				if (err) {
+					reject(err);
 				}
-			);
+
+				resolve(result);
+			});
 		});
 	}
 
@@ -125,18 +163,20 @@ module.exports = class AccountRepository {
 	 * @returns {Promise}
 	 */
 	Logout(userID, accessToken) {
-		return new Promise((resolve, reject) => {
-			mysql.query(
-				"DELETE FROM authorization_tokens WHERE user_id = ? AND access_token = ?",
-				[userID, accessToken],
-				(err, result) => {
-					if (err) {
-						reject(err);
-					}
+		const QUERY = `
+			DELETE FROM 
+				authorization_tokens 
+			WHERE user_id = ? 
+				AND access_token = ?`;
 
-					resolve(result);
+		return new Promise((resolve, reject) => {
+			mysql.query(QUERY, [userID, accessToken], (err, result) => {
+				if (err) {
+					reject(err);
 				}
-			);
+
+				resolve(result);
+			});
 		});
 	}
 
@@ -146,26 +186,25 @@ module.exports = class AccountRepository {
 	 * @param {Object} parameter {access_token: String, refresh_token: String, user_id: Number, connection: MySQL Connection}
 	 * @returns {Promise}
 	 */
-	SaveAuthorizationInfo({ access_token, refresh_token, user_id, connection }) {
-		return new Promise((resolve, reject) => {
-			try {
-				connection.query(
-					`INSERT INTO authorization_tokens (user_id, access_token, refresh_token) VALUES(?,?,?)`,
-					[user_id, access_token, refresh_token],
-					(err, result) => {
-						if (err) {
-							connection.release();
-							reject(err);
-						}
+	SaveAuthorizationInfo({ access_token, refresh_token, user_id }, connection) {
+		const QUERY = `
+			INSERT INTO 
+				authorization_tokens 
+			(user_id, access_token, refresh_token) 
+				VALUES(?,?,?)
+		`;
 
-						connection.release();
-						resolve(result);
+		return new Promise((resolve, reject) => {
+			connection.query(
+				QUERY,
+				[user_id, access_token, refresh_token],
+				(err, result) => {
+					if (err) {
+						reject(err);
 					}
-				);
-			} catch (err) {
-				connection.release();
-				reject(err);
-			}
+					resolve(result);
+				}
+			);
 		});
 	}
 
@@ -182,8 +221,19 @@ module.exports = class AccountRepository {
 		prev_refresh_token,
 	}) {
 		return new Promise((resolve, reject) => {
+			const QUERY = `
+				UPDATE 
+					authorization_tokens 
+				SET 
+					access_token = ?, 
+					refresh_token = ?, 
+					date_modified = NOW() 
+				WHERE 
+					user_id = ? AND refresh_token = ?
+			`;
+
 			mysql.query(
-				"UPDATE authorization_tokens SET access_token = ?, refresh_token = ?, date_modified = NOW() WHERE user_id = ? AND refresh_token = ?",
+				QUERY,
 				[new_access_token, new_refresh_token, user_id, prev_refresh_token],
 				(err, result) => {
 					if (err) {
@@ -203,9 +253,11 @@ module.exports = class AccountRepository {
 	 * @returns {Promise}
 	 */
 	SendOTP({ email, otp, token, token_expiration }) {
+		const QUERY = `call WEB_USER_CHECK_USER_FORGOT_PASSWORD_PROFILES(?,?,?,?)`;
+
 		return new Promise((resolve, reject) => {
 			mysql.query(
-				"call WEB_USER_CHECK_USER_FORGOT_PASSWORD_PROFILES(?,?,?,?)",
+				QUERY,
 				[email, otp, token, token_expiration],
 				(err, result) => {
 					if (err) {
@@ -225,18 +277,16 @@ module.exports = class AccountRepository {
 	 * @returns {Promise}
 	 */
 	VerifyOTP({ user_id, otp }) {
-		return new Promise((resolve, reject) => {
-			mysql.query(
-				"call WEB_USER_CHECK_OTP(?,?)",
-				[user_id, otp],
-				(err, result) => {
-					if (err) {
-						reject(err);
-					}
+		const QUERY = `call WEB_USER_CHECK_OTP(?,?)`;
 
-					resolve(result);
+		return new Promise((resolve, reject) => {
+			mysql.query(QUERY, [user_id, otp], (err, result) => {
+				if (err) {
+					reject(err);
 				}
-			);
+
+				resolve(result);
+			});
 		});
 	}
 
@@ -247,26 +297,24 @@ module.exports = class AccountRepository {
 	 * @returns {Promise}
 	 */
 	ChangePassword({ password, user_id }) {
+		const QUERY = `call WEB_USER_CHANGE_PASSWORD(?,?)`;
+
 		return new Promise((resolve, reject) => {
-			mysql.query(
-				"call WEB_USER_CHANGE_PASSWORD(?,?)",
-				[user_id, password],
-				(err, result) => {
-					if (err) {
-						reject(err);
-					}
-					resolve(result);
+			mysql.query(QUERY, [user_id, password], (err, result) => {
+				if (err) {
+					reject(err);
 				}
-			);
+				resolve(result);
+			});
 		});
 	}
 
 	ChangeOldPassword({ user_id, old_password, new_password, confirm_password }) {
-		const query = `call WEB_USER_CHANGE_OLD_PASSWORD(?,?,?,?)`;
+		const QUERY = `call WEB_USER_CHANGE_OLD_PASSWORD(?,?,?,?)`;
 
 		return new Promise((resolve, reject) => {
 			mysql.query(
-				query,
+				QUERY,
 				[user_id, old_password, new_password, confirm_password],
 				(err, result) => {
 					if (err) {
@@ -276,6 +324,35 @@ module.exports = class AccountRepository {
 					resolve(result);
 				}
 			);
+		});
+	}
+
+	GetUserDetails(userID) {
+		const QUERY = `
+			SELECT 
+				u.id AS user_id,
+				ud.id AS user_driver_id,
+				u.username,
+				u.role,
+				ud.name,
+				ud.email,
+				ud.address,
+				ud.mobile_number,
+				rc.rfid_card_tag,
+				rc.balance
+			FROM users AS u
+			INNER JOIN user_drivers AS ud ON u.id = ud.user_id
+			INNER JOIN rfid_cards AS rc ON ud.id = rc.user_driver_id
+			WHERE u.id = ?`;
+
+		return new Promise((resolve, reject) => {
+			mysql.query(QUERY, [userID], (err, result) => {
+				if (err) {
+					reject(err);
+				}
+
+				resolve(result);
+			});
 		});
 	}
 };

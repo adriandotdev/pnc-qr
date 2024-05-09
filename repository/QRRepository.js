@@ -166,12 +166,17 @@ module.exports = class QRRepository {
 	}
 
 	ResendOTP(data) {
-		const QUERY = `CALL WEB_QR_RESEND_OTP(?,?,?)`;
+		const QUERY = `CALL WEB_QR_RESEND_OTP(?,?,?,?)`;
 
 		return new Promise((resolve, reject) => {
 			mysql.query(
 				QUERY,
-				[data.user_driver_guest_id, data.timeslot_id, data.next_timeslot_id],
+				[
+					data.user_driver_guest_id,
+					data.timeslot_id,
+					data.next_timeslot_id,
+					data.otp,
+				],
 				(err, result) => {
 					if (err) {
 						reject(err);

@@ -497,11 +497,28 @@ module.exports = class QRService {
 	}
 
 	async ResendOTP(data) {
-		const result = await this.#repository.ResendOTP(data);
+		const otp = otpGenerator.generate(4, {
+			upperCaseAlphabets: false,
+			specialChars: false,
+			lowerCaseAlphabets: false,
+			digits: true,
+		});
+
+		const result = await this.#repository.ResendOTP({ ...data, otp });
 
 		const status = result[0][0].STATUS;
+		const mobile_number = result[0][0].mobile_number;
+
+		const message = `Hello, Guest User\n\nYour OTP for ParkNcharge free charging is ${otp}.\n\nUse it to authenticate. If you didn't request this, ignore it.\n\nThanks,\nParkNcharge`;
+
+		let sms = new SMS({
+			contact_number: mobile_number,
+			message,
+		});
 
 		if (status !== "SUCCESS") throw new HttpBadRequest(status, []);
+
+		await sms.SendOTP();
 
 		return status;
 	}

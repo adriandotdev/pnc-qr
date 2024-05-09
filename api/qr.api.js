@@ -216,7 +216,7 @@ module.exports = (app) => {
 		 * @param {import('express').Request} req
 		 * @param {import('express').Response} res
 		 */
-		async (req, res) => {
+		async (req, res, next) => {
 			try {
 				const { token, payment_id, evse_uid, connector_id } = req.params;
 
@@ -250,19 +250,7 @@ module.exports = (app) => {
 					.status(200)
 					.json({ status: 200, data: result, message: "Success" });
 			} catch (err) {
-				logger.error({
-					QR_GCASH_PAYMENT_ERROR: {
-						err,
-						message: err.message,
-					},
-				});
-
-				console.log(err);
-				return res.status(err.status || 500).json({
-					status: err.status || 500,
-					data: err.data || [],
-					message: err.message || "Internal Server Error",
-				});
+				next(err);
 			}
 		}
 	);
@@ -274,7 +262,7 @@ module.exports = (app) => {
 		 * @param {import('express').Request} req
 		 * @param {import('express').Response} res
 		 */
-		async (req, res) => {
+		async (req, res, next) => {
 			try {
 				const { token, evse_uid, connector_id, transaction_id } = req.params;
 
@@ -309,19 +297,7 @@ module.exports = (app) => {
 					.status(200)
 					.json({ status: 200, data: result, message: "Success" });
 			} catch (err) {
-				logger.error({
-					QR_MAYA_PAYMENT_ERROR: {
-						err,
-						message: err.message,
-					},
-				});
-
-				console.log(err);
-				return res.status(err.status || 500).json({
-					status: err.status || 500,
-					data: err.data || [],
-					message: err.message || "Internal Server Error",
-				});
+				next(err);
 			}
 		}
 	);
@@ -334,7 +310,7 @@ module.exports = (app) => {
 		 * @param {import('express').Request} req
 		 * @param {import('express').Response} res
 		 */
-		async (req, res) => {
+		async (req, res, next) => {
 			try {
 				const { guest_id } = req.params;
 
@@ -366,17 +342,7 @@ module.exports = (app) => {
 					.status(200)
 					.json({ status: 200, data: result, message: "Success" });
 			} catch (err) {
-				logger.error({
-					QR_VERIFY_OTP: {
-						err,
-						message: err.message,
-					},
-				});
-				return res.status(err.status || 500).json({
-					status: err.status || 500,
-					data: err.data || [],
-					message: err.message || "Internal Server Error",
-				});
+				next(err);
 			}
 		}
 	);
@@ -389,7 +355,7 @@ module.exports = (app) => {
 		 * @param {import('express').Request} req
 		 * @param {import('express').Response} res
 		 */
-		async (req, res) => {
+		async (req, res, next) => {
 			try {
 				const { guest_id } = req.params;
 
@@ -421,17 +387,7 @@ module.exports = (app) => {
 					.status(200)
 					.json({ status: 200, data: result, message: "Success" });
 			} catch (err) {
-				logger.error({
-					QR_RESEND_OTP: {
-						err,
-						message: err.message,
-					},
-				});
-				return res.status(err.status || 500).json({
-					status: err.status || 500,
-					data: err.data || [],
-					message: err.message || "Internal Server Error",
-				});
+				next(err);
 			}
 		}
 	);
