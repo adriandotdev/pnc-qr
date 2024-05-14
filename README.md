@@ -73,6 +73,30 @@ Check, and retrieve the status of the charger, connector, and rates.
 
 ---
 
+### Check Mobile Number Status - `GET /api/v1/qr/check-status/mobile_number/:mobile_number`
+
+Check the status of user charging session based on mobile number.
+
+**Authorization: Basic TOKEN**
+
+**Parameter**
+
+- **mobile_number** - User's mobile number
+
+**Sample Response**
+
+```json
+{
+	"status": 200,
+	"data": {
+		"charging_status": "PAID"
+	},
+	"message": "SUCCESS"
+}
+```
+
+---
+
 ### Charge through QR - `POST /api/v1/qr/charge`
 
 Initialize charging session through QR.
