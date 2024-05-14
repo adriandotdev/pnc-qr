@@ -528,6 +528,12 @@ module.exports = class QRService {
 		return status;
 	}
 
+	async CheckMobileNumberStatus(mobileNumber) {
+		const result = await this.#repository.CheckMobileNumberStatus(mobileNumber);
+
+		return result[0];
+	}
+
 	async #RequestAuthmodule() {
 		logger.info({
 			method: "RequestAuthmodule",

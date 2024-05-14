@@ -455,6 +455,47 @@ module.exports = (app) => {
 		}
 	);
 
+	app.get(
+		"/qr/api/v1/qr/check-status/mobile_number/:mobile_number",
+		[tokenMiddleware.BasicTokenVerifier()],
+		/**
+		 * @param {import('express').Request} req
+		 * @param {import('express').Response} res
+		 */
+		async (req, res, next) => {
+			try {
+				const { mobile_number } = req.params;
+
+				logger.info({
+					CHECK_MOBILE_NUMBER_STATUS_REQUEST: {
+						data: {
+							mobile_number,
+						},
+						message: "SUCCESS",
+					},
+				});
+
+				const result = await service.CheckMobileNumberStatus(mobile_number);
+
+				logger.info({
+					CHECK_MOBILE_NUMBER_STATUS_RESPONSE: {
+						data: {
+							mobile_number,
+						},
+						message: "SUCCESS",
+					},
+				});
+
+				return res
+					.status(200)
+					.json({ status: 200, data: result, message: "SUCCESS" });
+			} catch (err) {
+				req.error_name = "CHECK_MOBILE_NUMBER_STATUS_ERROR";
+				next(err);
+			}
+		}
+	);
+
 	app.use((err, req, res, next) => {
 		logger.error({
 			API_REQUEST_ERROR: {

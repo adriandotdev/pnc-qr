@@ -391,10 +391,24 @@ module.exports = class QRRepository {
 	}
 
 	CheckAndUpdateEVSEStatus(evseUID) {
-		const query = `CALL WEB_USER_CHECK_AND_UPDATE_EVSE_STATUS(?)`;
+		const QUERY = `CALL WEB_USER_CHECK_AND_UPDATE_EVSE_STATUS(?)`;
 
 		return new Promise((resolve, reject) => {
-			mysql.query(query, evseUID, (err, result) => {
+			mysql.query(QUERY, evseUID, (err, result) => {
+				if (err) {
+					reject(err);
+				}
+
+				resolve(result);
+			});
+		});
+	}
+
+	CheckMobileNumberStatus(mobileNumber) {
+		const QUERY = `SELECT charging_status FROM user_driver_guests WHERE mobile_number = ?`;
+
+		return new Promise((resolve, reject) => {
+			mysql.query(QUERY, [mobileNumber], (err, result) => {
 				if (err) {
 					reject(err);
 				}
