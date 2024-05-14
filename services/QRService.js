@@ -244,6 +244,8 @@ module.exports = class QRService {
 					user_id: guestID,
 					amount: modifiedAmountValueForPaymongo,
 					topup_id: lastInsertID,
+					evse_uid,
+					connector_id,
 				});
 
 				logger.info({
@@ -279,6 +281,8 @@ module.exports = class QRService {
 					user_id: guestID,
 					description,
 					amount: modifiedAmountValueForPaymongo,
+					evse_uid,
+					connector_id,
 				});
 
 				logger.info({
@@ -531,6 +535,8 @@ module.exports = class QRService {
 	async CheckMobileNumberStatus(mobileNumber) {
 		const result = await this.#repository.CheckMobileNumberStatus(mobileNumber);
 
+		if (result.length === 0) return {};
+
 		return result[0];
 	}
 
@@ -557,13 +563,22 @@ module.exports = class QRService {
 		return { status: result.status, data: result.data };
 	}
 
-	async #RequestToGCashSourceURL({ auth_token, user_id, amount, topup_id }) {
+	async #RequestToGCashSourceURL({
+		auth_token,
+		user_id,
+		amount,
+		topup_id,
+		evse_uid,
+		connector_id,
+	}) {
 		logger.info({
 			data: {
 				auth_token,
 				user_id,
 				amount,
 				topup_id,
+				evse_uid,
+				connector_id,
 			},
 			method: "RequestToGCashSourceURL",
 			class: "TopupService",
@@ -577,6 +592,8 @@ module.exports = class QRService {
 				topup_id,
 				user_type: "guest",
 				pnc_type: "pnc",
+				evse_uid,
+				connector_id,
 			},
 			{
 				headers: {
@@ -613,7 +630,14 @@ module.exports = class QRService {
 		return result.data;
 	}
 
-	async #RequestToMayaSourceURL({ auth_token, user_id, description, amount }) {
+	async #RequestToMayaSourceURL({
+		auth_token,
+		user_id,
+		description,
+		amount,
+		evse_uid,
+		connector_id,
+	}) {
 		const result = await axios.post(
 			process.env.MAYA_PAYMENT_URL,
 			{
@@ -625,6 +649,8 @@ module.exports = class QRService {
 				statement_descriptor: "ParkNcharge",
 				user_type: "guest",
 				pnc_type: "pnc",
+				evse_uid,
+				connector_id,
 			},
 			{
 				headers: {

@@ -241,6 +241,9 @@ GCash payment URL
 }
 ```
 
+**NOTE: Client must have this URL format**
+`http://localhost:3001/gcashPayment/:token/:user_id/:transaction_id/guest/:evse_uid.connector_id`
+
 ---
 
 ### QR Maya - `GET /api/v1/payments/guest/maya/:token/:transaction_id/:evse_uid/:connector_id`
@@ -268,3 +271,7 @@ Maya payment URL
 	"message": "Success"
 }
 ```
+
+**NOTE: Client must have this URL format**
+
+`http://localhost:3001/mayaPayment/:token/:user_id/guest/:evse_uid.connector_id/?payment_intent_id`
