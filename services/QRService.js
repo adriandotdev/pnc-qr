@@ -171,6 +171,11 @@ module.exports = class QRService {
 		let connection = null;
 
 		try {
+			if (!["gcash", "maya"].includes(payment_type))
+				throw new HttpBadRequest("INVALID_PAYMENT_TYPE", {
+					message: "Valid payment types are: gcash, and maya",
+				});
+
 			connection = await this.#repository.GetConnection();
 
 			const rfid = uuidv4().replace(/-/g, "").substring(0, 12).toUpperCase();

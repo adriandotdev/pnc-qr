@@ -136,7 +136,40 @@ module.exports = (app) => {
 
 	app.post(
 		"/qr/api/v1/qr/charge",
-		[tokenMiddleware.BasicTokenVerifier()],
+		[
+			tokenMiddleware.BasicTokenVerifier(),
+			body("mobile_number")
+				.notEmpty()
+				.withMessage("Missing required property: mobile_number")
+				.custom((value) => String(value).match(/^(09|\+639|639)\d{9}$/))
+				.withMessage(
+					"Invalid mobile number. Valid formats are: 09, +639, and 639"
+				),
+			body("location_id")
+				.notEmpty()
+				.withMessage("Missing required property: location_id"),
+			body("evse_uid")
+				.notEmpty()
+				.withMessage("Missing required property: evse_uid"),
+			body("connector_id")
+				.notEmpty()
+				.withMessage("Missing required property: connector_id"),
+			body("current_time")
+				.notEmpty()
+				.withMessage("Missing required property: current_time"),
+			body("current_date")
+				.notEmpty()
+				.withMessage("Missing required property: current_date"),
+			body("paid_charge_mins")
+				.notEmpty()
+				.withMessage("Missing required propety: paid_charge_mins"),
+			body("amount")
+				.notEmpty()
+				.withMessage("Missing required property: amount"),
+			body("homelink")
+				.notEmpty()
+				.withMessage("Missing required property: homelink"),
+		],
 
 		/**
 		 * @param {import('express').Request} req
@@ -304,7 +337,22 @@ module.exports = (app) => {
 
 	app.post(
 		"/qr/api/v1/qr/otp/verify/:guest_id",
-		[tokenMiddleware.BasicTokenVerifier()],
+		[
+			tokenMiddleware.BasicTokenVerifier(),
+			body("otp")
+				.notEmpty()
+				.withMessage("Missing required property: otp")
+				.custom((value) => String(value).length === 4),
+			body("timeslot_id")
+				.notEmpty()
+				.withMessage("Missing required property: timeslot_id"),
+			body("next_timeslot_id")
+				.optional()
+				.custom((value) => typeof value === "number")
+				.withMessage(
+					"Invalid type. Property next_timeslot_id must be in type of number"
+				),
+		],
 
 		/**
 		 * @param {import('express').Request} req
@@ -312,6 +360,8 @@ module.exports = (app) => {
 		 */
 		async (req, res, next) => {
 			try {
+				validate(req, res);
+
 				const { guest_id } = req.params;
 
 				const { otp, timeslot_id, next_timeslot_id } = req.body;
@@ -349,7 +399,18 @@ module.exports = (app) => {
 
 	app.post(
 		"/qr/api/v1/qr/otp/resend/:guest_id",
-		[tokenMiddleware.BasicTokenVerifier()],
+		[
+			tokenMiddleware.BasicTokenVerifier(),
+			body("timeslot_id")
+				.notEmpty()
+				.withMessage("Missing required property: timeslot_id"),
+			body("next_timeslot_id")
+				.optional()
+				.custom((value) => typeof value === "number")
+				.withMessage(
+					"Invalid type. Property next_timeslot_id must be in type of number"
+				),
+		],
 
 		/**
 		 * @param {import('express').Request} req
@@ -357,6 +418,8 @@ module.exports = (app) => {
 		 */
 		async (req, res, next) => {
 			try {
+				validate(req, res);
+
 				const { guest_id } = req.params;
 
 				const { timeslot_id, next_timeslot_id } = req.body;
