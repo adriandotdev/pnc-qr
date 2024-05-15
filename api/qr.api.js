@@ -1,5 +1,5 @@
 const TokenMiddleware = require("../middlewares/TokenMiddleware");
-const { validationResult, body } = require("express-validator");
+const { validationResult, body, param } = require("express-validator");
 
 const logger = require("../config/winston");
 
@@ -491,6 +491,50 @@ module.exports = (app) => {
 					.json({ status: 200, data: result, message: "SUCCESS" });
 			} catch (err) {
 				req.error_name = "CHECK_MOBILE_NUMBER_STATUS_ERROR";
+				next(err);
+			}
+		}
+	);
+
+	app.get(
+		"/qr/api/v1/payments/guest/verify/:transaction_id",
+		[
+			tokenMiddleware.BasicTokenVerifier(),
+			param("transaction_id")
+				.notEmpty()
+				.withMessage("Missing required property: transaction_id"),
+		],
+		/**
+		 * @param {import('express').Request} req
+		 * @param {import('express').Response} res
+		 */
+		async (req, res, next) => {
+			try {
+				validate(req, res);
+
+				const { transaction_id } = req.params;
+
+				logger.info({
+					PAYMENT_VERIFICATION_API_REQUEST: {
+						data: {
+							transaction_id,
+						},
+						message: "SUCESS",
+					},
+				});
+
+				const result = await service.VerifyPayment(transaction_id);
+
+				logger.info({
+					PAYMENT_VERIFICATION_API_RESPONSE: {
+						message: "SUCCESS",
+					},
+				});
+
+				return res
+					.status(200)
+					.json({ status: 200, data: result, message: "SUCCESS" });
+			} catch (err) {
 				next(err);
 			}
 		}

@@ -417,4 +417,28 @@ module.exports = class QRRepository {
 			});
 		});
 	}
+
+	VerifyPayment(transactionID) {
+		const QUERY = `
+			SELECT 
+				amount,
+				payment_type,
+				payment_status,
+				transaction_id
+			FROM 
+				user_driver_qr_payment_records
+			WHERE 
+				transaction_id = ?
+		`;
+
+		return new Promise((resolve, reject) => {
+			mysql.query(QUERY, [transactionID], (err, result) => {
+				if (err) {
+					reject(err);
+				}
+
+				resolve(result);
+			});
+		});
+	}
 };
