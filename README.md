@@ -275,3 +275,30 @@ Maya payment URL
 **NOTE: Client must have this URL format**
 
 `http://localhost:3001/mayaPayment/:token/:user_id/guest/:evse_uid.connector_id/?payment_intent_id`
+
+---
+
+### Verify Payment Status - `GET /qr/api/v1/payments/guest/verify/:transaction_id`
+
+Veryfies payment status
+
+**Authorization: Basic TOKEN**
+
+**Parameter**
+
+- **transaction_id**
+
+**Sample Response**
+
+```json
+{
+	"status": 200,
+	"data": {
+		"amount": "150.00",
+		"payment_type": "gcash",
+		"payment_status": "paid",
+		"transaction_id": "src_tRMtMezaJJuoLYAxFjw4UTnu"
+	},
+	"message": "SUCCESS"
+}
+```
