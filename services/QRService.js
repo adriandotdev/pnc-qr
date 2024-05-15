@@ -1,7 +1,11 @@
 const QRRepository = require("../repository/QRRepository");
 const axios = require("axios");
 
-const { HttpBadRequest, HttpConflict } = require("../utils/HttpError");
+const {
+	HttpBadRequest,
+	HttpConflict,
+	HttpNotFound,
+} = require("../utils/HttpError");
 
 const otpGenerator = require("otp-generator");
 const { v4: uuidv4 } = require("uuid");
@@ -428,6 +432,7 @@ module.exports = class QRService {
 					return {
 						payment_status: "SUCCESS",
 						home_link: paymentUpdateResult[0][0].home_link,
+						transaction_id: details[0].transaction_id,
 					};
 				}
 			}
@@ -486,10 +491,12 @@ module.exports = class QRService {
 					? {
 							payment_status: "SUCCESS",
 							home_link: updateMayaPaymentResult[0][0].home_link,
+							transaction_id,
 					  }
 					: {
 							payment_status: "FAILED",
 							home_link: updateMayaPaymentResult[0][0].home_link,
+							transaction_id,
 					  };
 			}
 		}
@@ -741,6 +748,19 @@ module.exports = class QRService {
 			const rates = await this.#repository.GetQRRates(evseUID);
 
 			return { ...evseDetails, connectors, rates };
+		} catch (err) {
+			throw err;
+		}
+	}
+
+	async VerifyPayment(transactionID) {
+		try {
+			const result = await this.#repository.VerifyPayment(transactionID);
+
+			if (result.length === 0)
+				throw new HttpNotFound("TRANSACTION_ID_NOT_FOUND", []);
+
+			return result[0];
 		} catch (err) {
 			throw err;
 		}
