@@ -424,9 +424,12 @@ module.exports = class QRRepository {
 				amount,
 				payment_type,
 				payment_status,
-				transaction_id
+				transaction_id,
+				paid_charge_mins
 			FROM 
 				user_driver_qr_payment_records
+			INNER JOIN
+				user_driver_guests ON user_driver_guests.id = user_driver_qr_payment_records.user_driver_guest_id
 			WHERE 
 				transaction_id = ?
 		`;
