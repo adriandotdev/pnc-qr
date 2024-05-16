@@ -34,7 +34,7 @@ app.use(
 			"http://localhost:3000",
 			"http://localhost:5173",
 			"http://localhost:3001",
-			"https://v2-payment-parkncharge.sysnetph.com",
+			"https://v2-payment-parkncharge.sysnetph.com:4018",
 			"https://v2-stg-parkncharge.sysnetph.com",
 			"https://v2-qr-parkncharge.sysnetph.com",
 		],
