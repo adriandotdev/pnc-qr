@@ -243,7 +243,10 @@ module.exports = (app) => {
 
 	app.get(
 		"/qr/api/v1/payments/guest/gcash/:token/:payment_id/:evse_uid/:connector_id",
-		[tokenMiddleware.AuthenticateGCashPaymentToken()],
+		[
+			tokenMiddleware.BasicTokenVerifier(),
+			tokenMiddleware.AuthenticateGCashPaymentToken(),
+		],
 
 		/**
 		 * @param {import('express').Request} req
@@ -290,7 +293,10 @@ module.exports = (app) => {
 
 	app.get(
 		"/qr/api/v1/payments/guest/maya/:token/:transaction_id/:evse_uid/:connector_id",
-		[tokenMiddleware.AuthenticateMayaPaymentToken()],
+		[
+			tokenMiddleware.BasicTokenVerifier(),
+			tokenMiddleware.AuthenticateMayaPaymentToken(),
+		],
 		/**
 		 * @param {import('express').Request} req
 		 * @param {import('express').Response} res
