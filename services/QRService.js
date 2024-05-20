@@ -379,6 +379,7 @@ module.exports = class QRService {
 				status: "failed",
 				user_id: details[0].user_driver_guest_id,
 				payment_id,
+				transaction_id: details[0].transaction_id,
 			});
 
 			logger.info({
@@ -387,7 +388,11 @@ module.exports = class QRService {
 				},
 			});
 
-			return { payment_status: "FAILED", home_link: result[0][0].home_link };
+			return {
+				payment_status: "FAILED",
+				home_link: result[0][0].home_link,
+				transaction_id: details[0].transaction_id,
+			};
 		}
 
 		if (payment_token_valid) {
