@@ -26,14 +26,8 @@ addColors(colors);
 const options = {
 	info: {
 		level: "info",
-		filename: "nspocpi-%DATE%.log",
-		dirname:
-			path.dirname(__dirname) +
-			path.sep +
-			"logs" +
-			path.sep +
-			"nspocpi" +
-			path.sep,
+		filename: "pnc_qr-%DATE%.log",
+		dirname: path.join(__dirname, "..", "logs", "pnc_qr"),
 		handleExceptions: true,
 		json: true,
 		colorize: true,
@@ -43,14 +37,8 @@ const options = {
 	},
 	error: {
 		level: "error",
-		filename: "nspocpi-%DATE%.log",
-		dirname:
-			path.dirname(__dirname) +
-			path.sep +
-			"logs" +
-			path.sep +
-			"nspocpi" +
-			path.sep,
+		filename: "pnc_qr-%DATE%.log",
+		dirname: path.join(__dirname, "..", "logs", "pnc_qr"),
 		handleExceptions: true,
 		json: true,
 		colorize: true,
