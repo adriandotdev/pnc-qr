@@ -27,9 +27,25 @@ module.exports = class QRService {
 	}
 
 	/**
+	 * Reserves a charging timeslot for a guest user.
+	 *
+	 * This function handles the reservation process for a charging timeslot, including generating an OTP,
+	 * adding a guest to the database, reserving the timeslot, and sending an OTP via SMS.
+	 *
 	 * @async
-	 * @method
-	 * @description This method is for free QR charging.
+	 * @function Reserve
+	 * @param {Object} params - The reservation parameters.
+	 * @param {boolean} params.is_free - Indicates if the charging is free.
+	 * @param {string} params.mobile_number - The mobile number of the guest user.
+	 * @param {number} params.location_id - The ID of the charging location.
+	 * @param {string} params.evse_uid - The unique ID of the EVSE.
+	 * @param {number} params.connector_id - The ID of the connector.
+	 * @param {string} params.current_time - The current time in HH:MM:SS format.
+	 * @param {string} params.current_date - The current date in YYYY-MM-DD format.
+	 * @param {number} params.paid_charge_mins - The number of minutes for paid charging.
+	 * @param {string} params.homelink - The homelink of the guest user.
+	 * @returns {Promise<Object>} The reservation details including user_driver_guest_id, timeslot_id, next_timeslot_id, and status.
+	 * @throws {Error} If an error occurs during the reservation process.
 	 */
 	async Reserve({
 		is_free,
@@ -141,9 +157,26 @@ module.exports = class QRService {
 	}
 
 	/**
+	 * Reserves a charging timeslot for a guest user with payment processing.
+	 *
+	 * This function handles the reservation process for a charging timeslot, including generating an RFID tag,
+	 * adding a guest to the database, reserving the timeslot, and processing the payment via GCash or Maya.
+	 *
 	 * @async
-	 * @method
-	 * @description This method is for QR charging with payment (GCash or Maya)
+	 * @function ReserveWithPayment
+	 * @param {Object} params - The reservation parameters.
+	 * @param {string} params.mobile_number - The mobile number of the guest user.
+	 * @param {number} params.location_id - The ID of the charging location.
+	 * @param {string} params.evse_uid - The unique ID of the EVSE.
+	 * @param {number} params.connector_id - The ID of the connector.
+	 * @param {string} params.current_time - The current time in HH:MM:SS format.
+	 * @param {string} params.current_date - The current date in YYYY-MM-DD format.
+	 * @param {number} params.paid_charge_mins - The number of minutes for paid charging.
+	 * @param {number} params.amount - The amount to be paid.
+	 * @param {string} params.payment_type - The type of payment (gcash or maya).
+	 * @param {string} params.homelink - The homelink of the guest user.
+	 * @returns {Promise<Object>} The reservation details including the checkout URL for payment.
+	 * @throws {Error} If an error occurs during the reservation process.
 	 */
 	async ReserveWithPayment({
 		mobile_number,
@@ -332,6 +365,23 @@ module.exports = class QRService {
 		}
 	}
 
+	/**
+	 * Processes a GCash payment for a guest user.
+	 *
+	 * This function handles the payment process via GCash, including validating the payment token, updating the payment status,
+	 * and checking the status of the EVSE connector.
+	 *
+	 * @async
+	 * @function GCashPayment
+	 * @param {Object} params - The payment parameters.
+	 * @param {string} params.token - The GCash payment token.
+	 * @param {number} params.payment_id - The ID of the payment.
+	 * @param {string} params.evse_uid - The unique ID of the EVSE.
+	 * @param {number} params.connector_id - The ID of the connector.
+	 * @param {boolean} params.payment_token_valid - Indicates if the payment token is valid.
+	 * @returns {Promise<Object>} The payment status and home link.
+	 * @throws {HttpBadRequest} If an error occurs during the payment process.
+	 */
 	async GCashPayment({
 		token,
 		payment_id,
@@ -444,6 +494,23 @@ module.exports = class QRService {
 		}
 	}
 
+	/**
+	 * Processes a Maya payment for a guest user.
+	 *
+	 * This function handles the payment process via Maya, including validating the payment token, updating the payment status,
+	 * and checking the status of the EVSE connector.
+	 *
+	 * @async
+	 * @function MayaPayment
+	 * @param {Object} params - The payment parameters.
+	 * @param {string} params.token - The Maya payment token.
+	 * @param {string} params.transaction_id - The ID of the transaction.
+	 * @param {string} params.evse_uid - The unique ID of the EVSE.
+	 * @param {number} params.connector_id - The ID of the connector.
+	 * @param {boolean} params.payment_token_valid - Indicates if the payment token is valid.
+	 * @returns {Promise<Object>} The payment status and home link.
+	 * @throws {HttpBadRequest} If an error occurs during the payment process.
+	 */
 	async MayaPayment({
 		token,
 		transaction_id,
@@ -507,6 +574,20 @@ module.exports = class QRService {
 		}
 	}
 
+	/**
+	 * Verifies the OTP for a user.
+	 *
+	 * This function checks the provided OTP against the stored OTP in the repository. If the OTP is correct, it returns a success status.
+	 * If the OTP verification fails, it throws an HttpBadRequest with the appropriate status message.
+	 *
+	 * @async
+	 * @function VerifyOTP
+	 * @param {Object} data - The data containing the user ID and OTP.
+	 * @param {number} data.user_id - The ID of the user.
+	 * @param {string} data.otp - The OTP to be verified.
+	 * @returns {Promise<string>} The status of the OTP verification.
+	 * @throws {HttpBadRequest} If the OTP verification fails.
+	 */
 	async VerifyOTP(data) {
 		const result = await this.#repository.VerifyOTP(data);
 
@@ -517,6 +598,19 @@ module.exports = class QRService {
 		return status;
 	}
 
+	/**
+	 * Resends an OTP to the user.
+	 *
+	 * This function generates a new OTP and updates it in the repository. It then sends the OTP to the user's mobile number via SMS.
+	 * If the operation is not successful, it throws an HttpBadRequest with the appropriate status message.
+	 *
+	 * @async
+	 * @function ResendOTP
+	 * @param {Object} data - The data containing the user information.
+	 * @param {number} data.user_id - The ID of the user.
+	 * @returns {Promise<string>} The status of the OTP resend operation.
+	 * @throws {HttpBadRequest} If the OTP resend operation fails.
+	 */
 	async ResendOTP(data) {
 		const otp = otpGenerator.generate(4, {
 			upperCaseAlphabets: false,
@@ -544,6 +638,18 @@ module.exports = class QRService {
 		return status;
 	}
 
+	/**
+	 * Checks the status of a mobile number.
+	 *
+	 * This function queries the repository to check the status of a given mobile number.
+	 * If the mobile number is not found, it returns an empty object.
+	 * If the mobile number is found, it returns the status information.
+	 *
+	 * @async
+	 * @function CheckMobileNumberStatus
+	 * @param {string} mobileNumber - The mobile number to be checked.
+	 * @returns {Promise<Object>} The status of the mobile number. If the number is not found, returns an empty object.
+	 */
 	async CheckMobileNumberStatus(mobileNumber) {
 		const result = await this.#repository.CheckMobileNumberStatus(mobileNumber);
 
@@ -552,6 +658,18 @@ module.exports = class QRService {
 		return result[0];
 	}
 
+	/**
+	 * Requests an authentication token from the Authmodule service.
+	 *
+	 * This function sends a POST request to the Authmodule URL with the specified grant type.
+	 * It includes the necessary headers for authorization and content type.
+	 * The response from the Authmodule is logged and returned with the status and data.
+	 *
+	 * @async
+	 * @function #RequestAuthmodule
+	 * @returns {Promise<Object>} The response from the Authmodule service, including status and data.
+	 * @throws {Error} If the request fails, an error is thrown.
+	 */
 	async #RequestAuthmodule() {
 		logger.info({
 			method: "RequestAuthmodule",
@@ -575,6 +693,25 @@ module.exports = class QRService {
 		return { status: result.status, data: result.data };
 	}
 
+	/**
+	 * Requests the GCash source URL for guest top-up.
+	 *
+	 * This function sends a POST request to the GCash source URL with the provided authentication token,
+	 * user ID, amount, top-up ID, EVSE UID, and connector ID.
+	 * It includes the necessary headers for authorization and content type.
+	 * The response from the GCash source URL is logged and returned with the status and data.
+	 *
+	 * @async
+	 * @function #RequestToGCashSourceURL
+	 * @param {string} auth_token The authentication token for accessing the GCash source URL.
+	 * @param {string} user_id The ID of the user initiating the top-up.
+	 * @param {number} amount The amount to be topped up.
+	 * @param {string} topup_id The ID of the top-up transaction.
+	 * @param {string} evse_uid The UID of the EVSE (Electric Vehicle Supply Equipment).
+	 * @param {string} connector_id The ID of the connector.
+	 * @returns {Promise<Object>} The response from the GCash source URL, including status and data.
+	 * @throws {Error} If the request fails, an error is thrown.
+	 */
 	async #RequestToGCashSourceURL({
 		auth_token,
 		user_id,
@@ -619,6 +756,23 @@ module.exports = class QRService {
 		return { status: result.status, data: result.data.result.data };
 	}
 
+	/**
+	 * Requests the GCash payment URL for initiating a payment transaction.
+	 *
+	 * This function sends a POST request to the GCash payment URL with the provided amount,
+	 * description, transaction ID, and authentication token.
+	 * It includes the necessary headers for authorization and content type.
+	 * The response from the GCash payment URL is returned.
+	 *
+	 * @async
+	 * @function #RequestToGCashPaymentURL
+	 * @param {number} amount - The amount of the payment transaction.
+	 * @param {string} description - The description of the payment transaction.
+	 * @param {string} id - The ID of the payment transaction.
+	 * @param {string} token - The authentication token for accessing the GCash payment URL.
+	 * @returns {Promise<Object>} The response from the GCash payment URL.
+	 * @throws {Error} If the request fails, an error is thrown.
+	 */
 	async #RequestToGCashPaymentURL({ amount, description, id, token }) {
 		const result = await axios.post(
 			process.env.GCASH_PAYMENT_URL,
@@ -642,6 +796,25 @@ module.exports = class QRService {
 		return result.data;
 	}
 
+	/**
+	 * Requests the Maya source URL for initiating a payment transaction.
+	 *
+	 * This function sends a POST request to the Maya payment URL with the provided user ID,
+	 * payment description, amount, EVSE UID, connector ID, and authentication token.
+	 * It includes the necessary headers for authorization and content type.
+	 * The response from the Maya payment URL is returned.
+	 *
+	 * @async
+	 * @function #RequestToMayaSourceURL
+	 * @param {string} auth_token - The authentication token for accessing the Maya payment URL.
+	 * @param {string} user_id - The ID of the user initiating the payment.
+	 * @param {string} description - The description of the payment transaction.
+	 * @param {number} amount - The amount of the payment transaction.
+	 * @param {string} evse_uid - The UID of the EVSE (Electric Vehicle Supply Equipment).
+	 * @param {string} connector_id - The ID of the connector.
+	 * @returns {Promise<Object>} The response from the Maya payment URL.
+	 * @throws {Error} If the request fails, an error is thrown.
+	 */
 	async #RequestToMayaSourceURL({
 		auth_token,
 		user_id,
@@ -676,6 +849,24 @@ module.exports = class QRService {
 		return result.data;
 	}
 
+	/**
+	 * Requests the Maya payment URL for initiating a payment transaction.
+	 *
+	 * This function sends a POST request to the Maya get payment URL with the provided payment intent,
+	 * and client key. It includes the necessary headers for authorization and content type.
+	 * The response from the Maya get payment URL is returned.
+	 *
+	 * If the status of the payment transaction is "processing", the function recursively calls itself
+	 * until the status changes. Once the status changes, it returns the final status.
+	 *
+	 * @async
+	 * @function #RequestToMayaPaymentURL
+	 * @param {string} token - The authentication token for accessing the Maya get payment URL.
+	 * @param {string} transaction_id - The ID of the payment transaction.
+	 * @param {string} client_key - The client key for the payment transaction.
+	 * @returns {Promise<string>} The status of the payment transaction.
+	 * @throws {Error} If the request fails, an error is thrown.
+	 */
 	async #RequestToMayaPaymentURL({ token, transaction_id, client_key }) {
 		const result = await axios.post(
 			process.env.MAYA_GET_PAYMENT_URL,
@@ -705,6 +896,22 @@ module.exports = class QRService {
 		return status;
 	}
 
+	/**
+	 * Retrieves timeslots for booking based on location, EVSE UID, connector ID, and current hour.
+	 *
+	 * This function sends a GET request to the booking timeslot service to fetch timeslots available
+	 * for booking at the specified location, EVSE UID, connector ID, and current hour. It includes
+	 * the necessary headers for authorization.
+	 *
+	 * @async
+	 * @function #GetTimeslots
+	 * @param {string} locationID - The ID of the location where the EVSE is located.
+	 * @param {string} evseUID - The UID of the EVSE (Electric Vehicle Supply Equipment).
+	 * @param {string} connectorID - The ID of the connector within the EVSE.
+	 * @param {number} currentHour - The current hour for which timeslots are requested.
+	 * @returns {Promise<object>} Timeslots available for booking.
+	 * @throws {HttpBadRequest} If the request fails, an HTTP bad request error is thrown.
+	 */
 	async #GetTimeslots(locationID, evseUID, connectorID, currentHour) {
 		let timeslots = null;
 
@@ -731,6 +938,20 @@ module.exports = class QRService {
 		return timeslots;
 	}
 
+	/**
+	 * Checks the status and details of an Electric Vehicle Supply Equipment (EVSE) using a QR code and EVSE UID.
+	 *
+	 * This function parses the QR code and validates its format. Then, it checks the EVSE status and retrieves
+	 * its details along with connector information and rates. If successful, it returns the EVSE details, connectors,
+	 * and rates.
+	 *
+	 * @async
+	 * @function CheckEVSE
+	 * @param {string} qrCode - The QR code containing the EVSE information.
+	 * @param {string} evseUID - The UID of the EVSE (Electric Vehicle Supply Equipment) to check.
+	 * @returns {Promise<object>} Details of the EVSE, including connectors and rates.
+	 * @throws {HttpBadRequest} If the QR code format is invalid or the EVSE check fails, an HTTP bad request error is thrown.
+	 */
 	async CheckEVSE(qrCode, evseUID) {
 		try {
 			const qr = qrCode.split("-");
@@ -758,6 +979,19 @@ module.exports = class QRService {
 		}
 	}
 
+	/**
+	 * Verifies the status of a payment transaction using its transaction ID.
+	 *
+	 * This function checks the status of a payment transaction based on its transaction ID.
+	 * If the transaction ID is not found, an HTTP not found error is thrown. Otherwise, the
+	 * details of the transaction are returned.
+	 *
+	 * @async
+	 * @function VerifyPayment
+	 * @param {string} transactionID - The ID of the payment transaction to verify.
+	 * @returns {Promise<object>} Details of the payment transaction.
+	 * @throws {HttpNotFound} If the transaction ID is not found, an HTTP not found error is thrown.
+	 */
 	async VerifyPayment(transactionID) {
 		try {
 			const result = await this.#repository.VerifyPayment(transactionID);
