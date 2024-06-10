@@ -62,6 +62,7 @@ module.exports = (app) => {
 					.status(200)
 					.json({ status: 200, data: result, message: "Success" });
 			} catch (err) {
+				req.error_name = "QR_RATES_LIST_ERROR";
 				next(err);
 			}
 		}
@@ -101,6 +102,7 @@ module.exports = (app) => {
 					.status(200)
 					.json({ status: 200, data: result, message: "Success" });
 			} catch (err) {
+				req.error_name = "GET_EVSE_DETAILS_ERROR";
 				next(err);
 			}
 		}
@@ -236,6 +238,7 @@ module.exports = (app) => {
 					.status(200)
 					.json({ status: 200, data: result, message: "Success" });
 			} catch (err) {
+				req.error_name = "QR_RESERVE_API_ERROR";
 				next(err);
 			}
 		}
@@ -286,6 +289,7 @@ module.exports = (app) => {
 					.status(200)
 					.json({ status: 200, data: result, message: "Success" });
 			} catch (err) {
+				req.error_name = "QR_GCASH_PAYMENT_API_ERROR";
 				next(err);
 			}
 		}
@@ -336,6 +340,7 @@ module.exports = (app) => {
 					.status(200)
 					.json({ status: 200, data: result, message: "Success" });
 			} catch (err) {
+				req.error_name = "QR_MAYA_PAYMENT_ERROR";
 				next(err);
 			}
 		}
@@ -366,8 +371,6 @@ module.exports = (app) => {
 		 */
 		async (req, res, next) => {
 			try {
-				validate(req, res);
-
 				const { guest_id } = req.params;
 
 				const { otp, timeslot_id, next_timeslot_id } = req.body;
@@ -380,6 +383,8 @@ module.exports = (app) => {
 						message: "SUCCESS",
 					},
 				});
+
+				validate(req, res);
 
 				const result = await service.VerifyOTP({
 					user_driver_guest_id: guest_id,
@@ -398,6 +403,7 @@ module.exports = (app) => {
 					.status(200)
 					.json({ status: 200, data: result, message: "Success" });
 			} catch (err) {
+				req.error_name = "QR_VERIFY_ERROR";
 				next(err);
 			}
 		}
@@ -424,8 +430,6 @@ module.exports = (app) => {
 		 */
 		async (req, res, next) => {
 			try {
-				validate(req, res);
-
 				const { guest_id } = req.params;
 
 				const { timeslot_id, next_timeslot_id } = req.body;
@@ -440,6 +444,8 @@ module.exports = (app) => {
 						message: "SUCCESS",
 					},
 				});
+
+				validate(req, res);
 
 				const result = await service.ResendOTP({
 					user_driver_guest_id: guest_id,
@@ -456,6 +462,7 @@ module.exports = (app) => {
 					.status(200)
 					.json({ status: 200, data: result, message: "Success" });
 			} catch (err) {
+				req.error_name = "QR_RESEND_OTP_ERROR";
 				next(err);
 			}
 		}
@@ -516,8 +523,6 @@ module.exports = (app) => {
 		 */
 		async (req, res, next) => {
 			try {
-				validate(req, res);
-
 				const { transaction_id } = req.params;
 
 				logger.info({
@@ -528,6 +533,8 @@ module.exports = (app) => {
 						message: "SUCESS",
 					},
 				});
+
+				validate(req, res);
 
 				const result = await service.VerifyPayment(transaction_id);
 
@@ -541,6 +548,7 @@ module.exports = (app) => {
 					.status(200)
 					.json({ status: 200, data: result, message: "SUCCESS" });
 			} catch (err) {
+				req.error_name = "PAYMENT_VERIFICATION_API_ERROR";
 				next(err);
 			}
 		}
@@ -549,6 +557,7 @@ module.exports = (app) => {
 	app.use((err, req, res, next) => {
 		logger.error({
 			API_REQUEST_ERROR: {
+				error_name: req.error_name || "UNKNOWN_ERROR",
 				message: err.message,
 				stack: err.stack.replace(/\\/g, "/"), // Include stack trace for debugging
 				request: {
